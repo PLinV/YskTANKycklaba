@@ -1,0 +1,4 @@
+-Graphiste (Gauthier): interface pour créer les persos et les cartes, fonctionnalités de création et stockage des persos en raylib -> système de stockage en .txt des maps et persos créés
+-Fonctionnalités (Aurélien): règles, les contrôles, colisions, connections manettes/pc  
+-Accueil(Menu) (Hatem): Start, Select : Character_texture, Map_texture, les comptes choisis J1, J2
+-Statistiques (Paulin) : Création compte, login, données associés -> faire la liaison entre les données récupérées dans le jeu et le .txt de stockage
