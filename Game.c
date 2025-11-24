@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <raylib.h>
 
+#define ZONE_JEU_WIDTH 1200
+#define ZONE_JEU_HEIGHT 720
+
 typedef struct rect_infos
 {
     int left;
@@ -11,59 +14,105 @@ typedef struct rect_infos
     Vector2 center;
 } rect_infos;
 
-#define SCREEN_WIDTH 700
-#define SCREEN_LENGTH 700
-
-void initR(Rectangle *R, int x, int y, int width, int height)
+typedef struct player
 {
-    R->x = x;
-    R->y = y;
-    R->width = width;
-    R->height = height;
+    int posX;
+    int posY;
+    int speed;
+} player;
+
+void mainLoop(player *p)
+{
+
+    drawEveryObstacle();
+    movePlayers(p);
+}
+void drawEveryObstacle()
+{
+    ClearBackground(RAYWHITE);
+
+    // zone de jeu = 400*400
+    int a = (int)((GetScreenWidth() - ZONE_JEU_WIDTH) / 2);
+    int b = (int)((GetScreenHeight() - ZONE_JEU_HEIGHT) / 2);
+    Color t = {100, 199, 100, 100};
+    DrawRectangle(a, b, ZONE_JEU_WIDTH, ZONE_JEU_HEIGHT, t);
+
+    // un obstacle
+    DrawRectangle(600, 400, 200, 200, RED);
+}
+bool IsThereAnObstacle(int X, int Y)
+{
+    if (X > 600 && X < 800) //&& Y >= 400 && Y <= 600
+    {
+        return 1;
+    }
+    return 0;
 }
 
-void event(Rectangle *R)
+void movePlayers(player *p)
 {
+    printf("\n\n%d, %d\n\n", p->posX, p->posY);
+
+    // movement
+    int x_velocity = 0;
+    int y_velocity = 0;
 
     if (IsKeyDown(KEY_Q) || IsKeyDown(KEY_LEFT))
-        R->x -= 50;
+        x_velocity -= p->speed;
     if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
-        R->x += 50;
+        x_velocity += p->speed;
     if (IsKeyDown(KEY_Z) || IsKeyDown(KEY_UP))
-        R->y -= 50;
+        y_velocity -= p->speed;
     if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))
-        R->y += 50;
+        y_velocity += p->speed;
+
+    if (abs(x_velocity) > 0 && abs(y_velocity) > 0)
+    {
+        x_velocity /= sqrt(2);
+        y_velocity /= sqrt(2);
+    }
+
+    // update player position
+
+    if (!IsThereAnObstacle(p->posX + x_velocity + 20, p->posY))
+    {
+        p->posX += x_velocity;
+    }
+    if (!IsThereAnObstacle(p->posX, p->posY + y_velocity))
+    {
+        p->posY += y_velocity;
+    }
+
+    x_velocity, y_velocity = 0, 0;
+
+    DrawRectangle(p->posX - 20, p->posY - 20, 40, 40, YELLOW);
+}
+
+player initGame()
+{
+    player p1 = {200, 200, 5};
+    return p1;
 }
 
 int main(void)
 {
-    // Desired window size as a percentage of the monitor
-    float scale = 0.2f; // 80%
+    char *title = "YskTANKycklaba";
+    int b = GetMonitorWidth(0);
+    int a = GetMonitorHeight(0);
 
-    // Get primary monitor size
-    int monitorWidth = GetMonitorWidth(0);
-    int monitorHeight = GetMonitorHeight(0);
-
-    // Scale the window size
-    int windowWidth = (int)(monitorWidth * scale);
-    int windowHeight = (int)(monitorHeight * scale);
-
-    // Center the window manually (optional)
-    int posX = (monitorWidth - windowWidth) / 2;
-    int posY = (monitorHeight - windowHeight) / 2;
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE); // Optional: make it resizable
-    InitWindow(windowWidth, windowHeight, "Percentage Window");
-
-    // Center the window (on Linux/Windows this works)
-    SetWindowPosition(posX, posY);
-
+    InitWindow(a, b, title);
     SetTargetFPS(60);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    SetWindowMinSize(ZONE_JEU_WIDTH, ZONE_JEU_HEIGHT);
 
+    player p = initGame();
     while (!WindowShouldClose())
     {
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText("Window is 80% of screen", 50, 50, 30, MAROON);
+        //---------------- DESSINER ICI POUR CHAQUE FRAME
+        mainLoop(&p);
+
+        //----------------
         EndDrawing();
     }
 

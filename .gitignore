@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+#extension vscode chelou
+*.code-workspace
+
 # Object files
 *.o
 *.ko
