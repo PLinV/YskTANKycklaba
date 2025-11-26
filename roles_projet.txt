@@ -2,3 +2,6 @@
 -Fonctionnalités (Aurélien): règles, les contrôles, collisions, connections manettes/pc  
 -Accueil(Menu) (Hatem): Start, Select : Character_texture, Map_texture, les comptes choisis J1, J2
 -Statistiques (Paulin) : Création compte, login, données associés -> faire la liaison entre les données récupérées dans le jeu et le .txt de stockage
+
+pour lancer : 
+gcc YskTANKycklaba/src/Game/*.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -I./raylib/src -L./raylib/src && ./a.out
