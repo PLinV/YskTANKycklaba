@@ -14,10 +14,12 @@ typedef struct player
 
 typedef struct projectile
 {
+    int playerId;
     float posX; // top left corner hitbox, in tiles
     float posY;
     float speedX; // in tiles unit
     float speedY;
+    float Orientation;
 
 } projectile;
 
@@ -35,3 +37,4 @@ typedef struct projectileList
 float tileMap(float dU, char *map);
 void drawEveryTile(float dU, char *map);
 void drawPlayers(float dU, player *p);
+void drawProjectiles(float dU, projectileList *pr);

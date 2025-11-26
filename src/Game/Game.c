@@ -13,6 +13,7 @@ void mainLoop(player *p, projectileList *pr, float dU, char *map)
     // render everything (scale unit)
     drawEveryTile(dU, map);
     drawPlayers(dU, p);
+    drawProjectiles(dU, pr);
 }
 
 int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map)
@@ -143,23 +144,38 @@ void listAdd(projectileList *pr, projectile p)
     }
     pr->data[pr->size] = p;
     pr->size += 1;
-    printf("taille : %d, capa : %d\n", pr->size, pr->capacity);
-    for (int i=0;i<pr->size;i++){
-        projectile c = pr->data[i];
-
-    }
+    // printf("taille : %d, capa : %d\n", pr->size, pr->capacity);
+    // for (int i = 0; i < pr->size; i++)
+    // {
+    //     projectile c = pr->data[i];
+    //     printf("x: %f, y:%f, 1:%f, 2:%f\n", c.posX, c.posY, c.speedX, c.speedY);
+    // }
 }
 void listRem() {}
 
 void actions(player *players, projectileList *pr)
 {
-    // printf("%d\n", pr->size);
-    if (IsKeyPressed(KEY_KP_0))
+    for (int i = 0; i < 2; i++) // iterating on every player
     {
-        projectile newProjectile = {0, 0, 0, 0};
-        listAdd(pr, newProjectile);
+        player p = players[i];
+        switch (i)
+        {
+        case 0:
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                projectile newProjectile = {i, p.posX, p.posY, 3, 4, p.aimOrientation};
+                listAdd(pr, newProjectile);
+            }
+            break;
+        case 1:
+            if (IsKeyPressed(KEY_KP_0))
+            {
+                projectile newProjectile = {i, p.posX, p.posY, 3, 4, p.aimOrientation};
+                listAdd(pr, newProjectile);
+            }
+            break;
+        }
     }
-    // printf("%f\n", pr->data[0].posX);
 }
 
 void initGame()
@@ -181,7 +197,7 @@ int main(void)
 
     initGame();
 
-    player p1 = {2, 2, 0.8, 0.3, 10};
+    player p1 = {2, 2, 0.8, 0.1, 10};
     player p2 = {10, 2, 0.8, 0.3, 10};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list

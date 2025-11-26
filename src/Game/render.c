@@ -13,7 +13,6 @@ float tileMap(float dU, char *map)
     {
         for (int j = 0; j < H; j++)
         {
-
             if (map[(j * W + i) * 2] == '1')
             {
                 DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){0, 255, 0, 255});
@@ -45,5 +44,16 @@ void drawPlayers(float dU, player *players)
         DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 255, 0, i * 255, 255});
         // canon
         DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, 0.1 * dU, 1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255});
+    }
+}
+
+void drawProjectiles(float dU, projectileList *pr)
+{
+    for (int i = 0; i < pr->size; i++) // iterating on each projectile
+    {
+        projectile proj = pr->data[i];
+        Rectangle projShape = {proj.posX * dU, proj.posY * dU, 0.1 * dU, 1 * dU};
+        Color c = {0, 0, proj.playerId * 255, 255};
+        DrawRectanglePro(projShape, (Vector2){0, 0}, proj.Orientation, c);
     }
 }
