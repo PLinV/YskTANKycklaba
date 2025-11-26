@@ -207,7 +207,7 @@ int main(void)
     float dUY = GetScreenHeight() / (float)H;
     float dU = dUX < dUY ? dUX : dUY;
 
-    const char *nom = "./YskTANKycklaba/src/Game/map.txt";
+    const char *nom = "src/Game/map.txt";
     char *txt = LoadFileText(nom);
 
     while (!WindowShouldClose())
