@@ -4,7 +4,8 @@
 
 #include "render.h"
 
-void mainLoop(player *p, float dU);
-void movePlayers(player *p);
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical);
+void mainLoop(player *p, projectileList *pr, float dU, char *map);
+void movePlayers(player *p, char *map);
+void actions(player *players, projectileList *pr);
+int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map);
 void initGame();

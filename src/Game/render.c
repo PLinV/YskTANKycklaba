@@ -4,40 +4,46 @@
 
 #include "render.h"
 
-float tileMap(float dU)
+float tileMap(float dU, char *map)
 {
 
     ClearBackground(RAYWHITE);
 
-    const char *nom = "./YskTANKycklaba/src/Game/map.txt";
-    char *txt = LoadFileText(nom);
-    printf("%s\n", txt);
-
-    for (int i = 0; i < W + 1; i++)
+    for (int i = 0; i < W; i++)
     {
-        for (int j = 0; j < H + 1; j++)
+        for (int j = 0; j < H; j++)
         {
-            DrawRectangle((int)(dU * i), (int)(dU * j), 40, 40, (Color){1, i * 10, j * 10, 100});
-            if(txt[i*W+j*H]=='0'){
-                DrawRectangle((int)(dU * i), (int)(dU * j), 40, 40, (Color){1, i * 10, j * 10, 100});
+
+            if (map[(j * W + i) * 2] == '1')
+            {
+                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){0, 255, 0, 255});
+            }
+            else
+            {
+                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){255, i * 10, j * 10, 255});
             }
         }
     }
-    DrawLine(1 * dU, 1 * dU, ((W - 1)) * dU, 1 * dU, (Color){200, 0, 0, 255});
-    DrawLine((W - 1) * dU, 1 * dU, (W - 1) * dU, (H - 1) * dU, (Color){200, 0, 0, 255});
-    DrawLine((W - 1) * dU, (H - 1) * dU, 1 * dU, (H - 1) * dU, (Color){200, 0, 0, 255});
-    DrawLine(1 * dU, (H - 1) * dU, 1 * dU, 1 * dU, (Color){200, 0, 0, 255});
 }
 
-void drawEveryTile(float dU)
+void drawEveryTile(float dU, char *map)
 {
-    tileMap(dU);
+    tileMap(dU, map);
 
     // un obstacle
     DrawRectangle(60 * dU, 60 * dU, 30 * dU, 40 * dU, RED);
 }
 
-void drawPlayers(float dU, player *p)
+void drawPlayers(float dU, player *players)
 {
-    DrawRectangle((p->posX - p->size / 2) * dU, (p->posY - p->size / 2) * dU, p->size * dU, p->size * dU, YELLOW);
+    for (int i = 0; i < 2; i++)
+    {
+        player *p = &players[i];
+        Vector2 pos = {(p->posX - p->size / 2), (p->posY - p->size / 2)};
+
+        // body
+        DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 255, 0, i * 255, 255});
+        // canon
+        DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, 0.1 * dU, 1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255});
+    }
 }
