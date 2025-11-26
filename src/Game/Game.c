@@ -91,9 +91,9 @@ void movePlayers(player *players, char *map)
             if (IsKeyDown(KEY_S))
                 y_velocity += p->speed;
             if (IsKeyDown(KEY_Q))
-                p->aimOrientation -= 5.0f;
+                p->aimOrientation -= 3.0f;
             if (IsKeyDown(KEY_E))
-                p->aimOrientation += 5.0f;
+                p->aimOrientation += 3.0f;
             break;
 
         case 1:
@@ -106,9 +106,9 @@ void movePlayers(player *players, char *map)
             if (IsKeyDown(KEY_DOWN))
                 y_velocity += p->speed;
             if (IsKeyDown(KEY_KP_1))
-                p->aimOrientation += 5.0f;
+                p->aimOrientation += 3.0f;
             if (IsKeyDown(KEY_KP_2))
-                p->aimOrientation -= 5.0f;
+                p->aimOrientation -= 3.0f;
             break;
         }
 
@@ -198,7 +198,7 @@ int main(void)
     initGame();
 
     player p1 = {2, 2, 0.8, 0.1, 10};
-    player p2 = {10, 2, 0.8, 0.3, 10};
+    player p2 = {10, 2, 0.8, 0.1, 10};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
