@@ -10,6 +10,7 @@ void mainLoop(player *p, projectileList *pr, float dU, char *map)
     // get inputs and move player (in tiles unit)
     movePlayers(p, map);
     actions(p, pr);
+    updateProjectiles(pr, map);
     // render everything (scale unit)
     drawEveryTile(dU, map);
     drawPlayers(dU, p);
@@ -131,6 +132,24 @@ void movePlayers(player *players, char *map)
         if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map))
         {
             p->posY += y_velocity;
+        }
+    }
+}
+
+void updateProjectiles(projectileList *pr, char *map)
+{
+    for (int i = 0; i < pr->size; i++) // iterating on each projectile
+    {
+        projectile proj = pr->data[i];
+        Rectangle ProjHitbox = {proj.posX - 1 / 2, proj.posX - 1 / 2, 1, 1};
+        printf("%d\n", IsThereAnObstacle(ProjHitbox, proj.speedX, true, map));
+        if (!IsThereAnObstacle(ProjHitbox, proj.speedX, true, map))
+        {
+            proj.posX += proj.speedX;
+        }
+        if (!IsThereAnObstacle(ProjHitbox, proj.speedY, false, map))
+        {
+            proj.posY += proj.speedY;
         }
     }
 }
