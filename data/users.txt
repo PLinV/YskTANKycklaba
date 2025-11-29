@@ -1,1 +1,5 @@
 username;maxScore;gamesPlayed
+Alice;10;64
+hatem;13;2
+Bob;120;22
+goat;12;1
