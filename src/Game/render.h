@@ -9,7 +9,7 @@ typedef struct player
     float size;
     float speed;          // in tiles
     float aimOrientation; // 0-
-
+    int playerId;
 } player;
 
 typedef struct projectile
@@ -19,7 +19,9 @@ typedef struct projectile
     float posY;
     float speedX; // in tiles unit
     float speedY;
-    float Orientation;
+    float Orientation; // angle in degrees
+    float size;        // in tile unit
+    int bounceLeft;
 
 } projectile;
 

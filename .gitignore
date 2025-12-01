@@ -3,7 +3,7 @@
 
 #extension vscode chelou
 *.code-workspace
-
+prog
 # Object files
 *.o
 *.ko

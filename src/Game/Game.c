@@ -17,15 +17,15 @@ void mainLoop(player *p, projectileList *pr, float dU, char *map)
     drawProjectiles(dU, pr);
 }
 
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map)
-{
+int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map)
+{ // arg called player but applies as well to projectiles
 
     // checks if hitbox collides in a direction (either vertical or horizontal)
-    if (checkVertical)
+    if (checkHorizontal)
     {
         bool res = false;
         for (int i = 0; i < W; i++)
-        {
+        { // yes it's not fucking optimized but it's starts lagging at 15000 projectiles so ...
             for (int j = 0; j < H; j++)
             {
                 if (map[(j * W + i) * 2] == '1')
@@ -112,6 +112,14 @@ void movePlayers(player *players, char *map)
                 p->aimOrientation -= 3.0f;
             break;
         }
+        if (p->aimOrientation > 360)
+        {
+            p->aimOrientation = 0;
+        }
+        if (p->aimOrientation < 0)
+        {
+            p->aimOrientation = 360;
+        }
 
         if (fabs(x_velocity) > 0 && fabs(y_velocity) > 0)
         {
@@ -138,61 +146,126 @@ void movePlayers(player *players, char *map)
 
 void updateProjectiles(projectileList *pr, char *map)
 {
-    for (int i = 0; i < pr->size; i++) // iterating on each projectile
+    for (int i = pr->size - 1; i >= 0; i--) // iterating on each projectile
     {
-        projectile proj = pr->data[i];
-        Rectangle ProjHitbox = {proj.posX - 1 / 2, proj.posX - 1 / 2, 1, 1};
-        printf("%d\n", IsThereAnObstacle(ProjHitbox, proj.speedX, true, map));
-        if (!IsThereAnObstacle(ProjHitbox, proj.speedX, true, map))
+        projectile *proj = &pr->data[i];
+        Rectangle ProjHitbox = {proj->posX - proj->size / 2, proj->posY - proj->size / 2, proj->size, proj->size};
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map))
         {
-            proj.posX += proj.speedX;
+            proj->posX += proj->speedX;
         }
-        if (!IsThereAnObstacle(ProjHitbox, proj.speedY, false, map))
+        else
         {
-            proj.posY += proj.speedY;
+            // horizontal wall hit
+            if (proj->bounceLeft > 0)
+            {
+                proj->speedX = -proj->speedX;
+                proj->bounceLeft -= 1;
+            }
+            else
+            {
+                listRem(i, pr);
+                continue; // magic line preventing the skip of an index
+                //  because listRem is changing the very list we're iterating on
+            }
+        }
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedY, false, map))
+        {
+            proj->posY += proj->speedY;
+        }
+        else
+        {
+            // vertical wall hit
+            if (proj->bounceLeft > 0)
+            {
+                proj->speedY = -proj->speedY;
+                proj->bounceLeft -= 1;
+            }
+            else
+            {
+                listRem(i, pr);
+                continue; // magic line preventing the skip of an index
+                //  because listRem is changing the very list we're iterating on
+            }
         }
     }
 }
 
 void listAdd(projectileList *pr, projectile p)
 {
+
     if (pr->capacity <= pr->size)
     {
-        pr->data = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity + 8));
+        printf("realloc \n");
+        projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity + 8));
+        if (tmp == NULL)
+        {
+            printf("REALLOC FAILED");
+            return;
+        }
+
+        pr->data = tmp;
         pr->capacity += 8;
     }
     pr->data[pr->size] = p;
     pr->size += 1;
-    // printf("taille : %d, capa : %d\n", pr->size, pr->capacity);
-    // for (int i = 0; i < pr->size; i++)
-    // {
-    //     projectile c = pr->data[i];
-    //     printf("x: %f, y:%f, 1:%f, 2:%f\n", c.posX, c.posY, c.speedX, c.speedY);
-    // }
 }
-void listRem() {}
+void listRem(int projectileIndex, projectileList *pr)
+{
+    if (projectileIndex < 0 || projectileIndex >= pr->size)
+    {
+        printf("erreur index");
+        return;
+    }
+    if (projectileIndex < pr->size - 1)
+    {
+        projectile *ptr = pr->data;
 
+        for (int i = projectileIndex; i < pr->size - 1; i++) // move in the list each projectile after the one selected by the index by overwriting
+        {
+            ptr[i] = ptr[i + 1];
+        }
+    }
+    pr->size -= 1;
+    
+    // change capacity
+    if (pr->capacity <= pr->size)
+    {
+        printf("realloc \n");
+        projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity + 8));
+        if (tmp == NULL)
+        {
+            printf("REALLOC FAILED");
+            return;
+        }
+
+        pr->data = tmp;
+        pr->capacity += 8;
+    }
+}
+
+void spawnBullet(player p, projectileList *pr)
+{
+    float speedX = 0.1 * cosf(p.aimOrientation * 2 * PI / 360);
+    float speedY = 0.1 * sinf(p.aimOrientation * 2 * PI / 360);
+    projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, 1, 2};
+    listAdd(pr, newProjectile);
+}
 void actions(player *players, projectileList *pr)
 {
     for (int i = 0; i < 2; i++) // iterating on every player
     {
-        player p = players[i];
-        switch (i)
+        player p;
+
+        if (IsKeyPressed(KEY_SPACE))
         {
-        case 0:
-            if (IsKeyPressed(KEY_SPACE))
-            {
-                projectile newProjectile = {i, p.posX, p.posY, 3, 4, p.aimOrientation};
-                listAdd(pr, newProjectile);
-            }
-            break;
-        case 1:
-            if (IsKeyPressed(KEY_KP_0))
-            {
-                projectile newProjectile = {i, p.posX, p.posY, 3, 4, p.aimOrientation};
-                listAdd(pr, newProjectile);
-            }
-            break;
+            p = players[0];
+            spawnBullet(p, pr);
+        }
+        if (IsKeyPressed(KEY_KP_0))
+        {
+            p = players[1];
+            spawnBullet(p, pr);
         }
     }
 }
@@ -216,8 +289,8 @@ int main(void)
 
     initGame();
 
-    player p1 = {2, 2, 0.8, 0.1, 10};
-    player p2 = {10, 2, 0.8, 0.1, 10};
+    player p1 = {2, 2, 0.8, 0.1, 10, 0};
+    player p2 = {10, 2, 0.8, 0.1, 10, 1};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
@@ -240,7 +313,7 @@ int main(void)
         //----------------
         EndDrawing();
     }
-
+    free(txt);
     CloseWindow();
     return 0;
 }
