@@ -5,16 +5,18 @@
 // pr lancer : gcc YskTANKycklaba/src/Game/*.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -I./raylib/src -L./raylib/src && ./a.out
 #include "Game.h"
 
-void mainLoop(player *p, projectileList *pr, float dU, char *map)
+void mainLoop(player *p, projectileList *pr, powerUp *pu, float dU, char *map)
 {
     // get inputs and move player (in tiles unit)
     movePlayers(p, map);
     actions(p, pr);
-    updateProjectiles(pr, map);
+    updateProjectiles(pr, p, map);
+    powerUps(pu, map, p);
     // render everything (scale unit)
     drawEveryTile(dU, map);
     drawPlayers(dU, p);
     drawProjectiles(dU, pr);
+    drawPowerUp(dU, *pu);
 }
 
 int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map)
@@ -144,12 +146,39 @@ void movePlayers(player *players, char *map)
     }
 }
 
-void updateProjectiles(projectileList *pr, char *map)
+void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p)
+{
+    for (int j = 0; j < 2; j++)
+    {
+        if (j == proj->playerId)
+        {
+            continue;
+            // skips for its own player
+        }
+        else
+        {
+            player pla = p[j];
+            Rectangle PlayerHitbox = {pla.posX - pla.size / 2, pla.posY - pla.size / 2, pla.size, pla.size};
+            if (CheckCollisionRecs(ProjHitbox, PlayerHitbox))
+            {
+                player *tmp = &p[j];
+                tmp->posX = 1000000;
+                // basically kills it bruh
+            }
+        }
+    }
+}
+
+void updateProjectiles(projectileList *pr, player *p, char *map)
 {
     for (int i = pr->size - 1; i >= 0; i--) // iterating on each projectile
     {
         projectile *proj = &pr->data[i];
         Rectangle ProjHitbox = {proj->posX - proj->size / 2, proj->posY - proj->size / 2, proj->size, proj->size};
+        // player hits
+        checkPlayersGettingHit(proj, ProjHitbox, p);
+
+        // wall hits
         if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map))
         {
             proj->posX += proj->speedX;
@@ -196,7 +225,7 @@ void listAdd(projectileList *pr, projectile p)
 
     if (pr->capacity <= pr->size)
     {
-        printf("realloc \n");
+
         projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity + 8));
         if (tmp == NULL)
         {
@@ -210,6 +239,7 @@ void listAdd(projectileList *pr, projectile p)
     pr->data[pr->size] = p;
     pr->size += 1;
 }
+
 void listRem(int projectileIndex, projectileList *pr)
 {
     if (projectileIndex < 0 || projectileIndex >= pr->size)
@@ -227,12 +257,11 @@ void listRem(int projectileIndex, projectileList *pr)
         }
     }
     pr->size -= 1;
-    
+
     // change capacity
-    if (pr->capacity <= pr->size)
+    if (pr->capacity >= pr->size + 16)
     {
-        printf("realloc \n");
-        projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity + 8));
+        projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity - 8));
         if (tmp == NULL)
         {
             printf("REALLOC FAILED");
@@ -240,17 +269,18 @@ void listRem(int projectileIndex, projectileList *pr)
         }
 
         pr->data = tmp;
-        pr->capacity += 8;
+        pr->capacity -= 8;
     }
 }
 
 void spawnBullet(player p, projectileList *pr)
 {
-    float speedX = 0.1 * cosf(p.aimOrientation * 2 * PI / 360);
-    float speedY = 0.1 * sinf(p.aimOrientation * 2 * PI / 360);
-    projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, 1, 2};
+    float speedX = 0.15 * cosf(p.aimOrientation * 2 * PI / 360);
+    float speedY = 0.15 * sinf(p.aimOrientation * 2 * PI / 360);
+    projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, 0.5, 2};
     listAdd(pr, newProjectile);
 }
+
 void actions(player *players, projectileList *pr)
 {
     for (int i = 0; i < 2; i++) // iterating on every player
@@ -267,6 +297,46 @@ void actions(player *players, projectileList *pr)
             p = players[1];
             spawnBullet(p, pr);
         }
+    }
+}
+
+void powerUps(powerUp *pu, char *map, player *p)
+{
+
+    if (pu->timer <= 0)
+    { // spawn a power up
+        while (!pu->hasSpawnYet)
+        {
+            int randomX = rand() % W;
+            int randomY = rand() % H;
+            Rectangle hitbox = {randomX, randomY, 2, 2};
+
+            if (!IsThereAnObstacle(hitbox, 0, false, map))
+            {
+                pu->posX = (float)randomX;
+                pu->posY = (float)randomY;
+                pu->hasSpawnYet = true;
+            }
+        }
+        // check if a player takes it
+        for (int i = 0; i < 2; i++)
+        {
+            player pla = p[i];
+            Rectangle hitboxPlayer = {pla.posX - pla.size / 2, pla.posY - pla.size / 2, pla.size, pla.size};
+            Rectangle hitboxPowerUp = {pu->posX, pu->posY, 2, 2};
+            // printf("%f %f",pla.posX, pla.posY);
+            if (CheckCollisionRecs(hitboxPlayer, hitboxPowerUp))
+            { // effects of the power up
+                // givePowerUp()
+                pu->posY = 1000000; // disappears from the map
+                pu->timer = 60 * 15;
+                pu->hasSpawnYet = false;
+            }
+        }
+    }
+    else
+    { // printf("%d\n", pu->timer);
+        pu->timer -= 1;
     }
 }
 
@@ -290,10 +360,11 @@ int main(void)
     initGame();
 
     player p1 = {2, 2, 0.8, 0.1, 10, 0};
-    player p2 = {10, 2, 0.8, 0.1, 10, 1};
+    player p2 = {20, 13, 0.8, 0.1, 10, 1};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
+    powerUp pu = {120, 0, 100000, false, 0, 0, 0}; // spawned out of the map
 
     float dUX = GetScreenWidth() / (float)W;
     float dUY = GetScreenHeight() / (float)H;
@@ -302,6 +373,9 @@ int main(void)
     const char *nom = "./YskTANKycklaba/src/Game/map.txt";
     char *txt = LoadFileText(nom);
 
+    // gives a random seed to make random random or random isn't random
+    srand(time(NULL));
+
     while (!WindowShouldClose())
     {
         BeginDrawing();
@@ -309,7 +383,7 @@ int main(void)
         float dUX = GetScreenWidth() / (float)W;
         float dUY = GetScreenHeight() / (float)H;
         float dU = dUX < dUY ? dUX : dUY; // dynamic resolution rendering
-        mainLoop(p, &prList, dU, txt);
+        mainLoop(p, &prList, &pu, dU, txt);
         //----------------
         EndDrawing();
     }

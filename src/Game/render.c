@@ -52,9 +52,16 @@ void drawProjectiles(float dU, projectileList *pr)
     for (int i = 0; i < pr->size; i++) // iterating on each projectile
     {
         projectile proj = pr->data[i];
-        Rectangle projShape = {(proj.posX - proj.size / 2) * dU, (proj.posY - proj.size / 2) * dU, 1 * dU, 1 * dU};
+        Rectangle projShape = {(proj.posX - proj.size / 2) * dU, (proj.posY - proj.size / 2) * dU, proj.size * dU, proj.size * dU};
         Color c = {0, 0, proj.playerId * 255, 255};
-        DrawRectangle(projShape.x, projShape.y, projShape.width, projShape.height, c);
+        DrawRectangleRec(projShape, c);
         // DrawRectanglePro(projShape, (Vector2){0, 0}, proj.Orientation, c);
     }
+}
+
+void drawPowerUp(float dU, powerUp pu)
+{
+    Color c = {123, 62, 167, 255};
+    Rectangle puShape = {pu.posX  * dU, pu.posY * dU, 2 * dU, 2 * dU};
+    DrawRectangleRec(puShape, c);
 }
