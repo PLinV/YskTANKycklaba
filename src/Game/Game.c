@@ -11,12 +11,12 @@ void mainLoop(player *p, projectileList *pr, powerUp *pu, float dU, char *map)
     movePlayers(p, map);
     actions(p, pr);
     updateProjectiles(pr, p, map);
-    powerUps(pu, map, p);
+    powerUps(pu, map, p, pr);
     // render everything (scale unit)
     drawEveryTile(dU, map);
     drawPlayers(dU, p);
-    drawProjectiles(dU, pr);
     drawPowerUp(dU, *pu);
+    drawProjectiles(dU, pr);
 }
 
 int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map)
@@ -273,11 +273,12 @@ void listRem(int projectileIndex, projectileList *pr)
     }
 }
 
-void spawnBullet(player p, projectileList *pr)
+void spawnBullet(player p, projectileList *pr, float custom_orientation, float size, int bounce_left)
 {
-    float speedX = 0.15 * cosf(p.aimOrientation * 2 * PI / 360);
-    float speedY = 0.15 * sinf(p.aimOrientation * 2 * PI / 360);
-    projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, 0.5, 2};
+    float aimOrientation = custom_orientation == -1 ? p.aimOrientation : custom_orientation;
+    float speedX = 0.15 * cosf(aimOrientation * 2 * PI / 360);
+    float speedY = 0.15 * sinf(aimOrientation * 2 * PI / 360);
+    projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, size, bounce_left};
     listAdd(pr, newProjectile);
 }
 
@@ -286,21 +287,46 @@ void actions(player *players, projectileList *pr)
     for (int i = 0; i < 2; i++) // iterating on every player
     {
         player p;
-
-        if (IsKeyPressed(KEY_SPACE))
+        if (IsKeyPressed(KEY_SPACE) || players[0].powerUp.machineGun)
         {
             p = players[0];
-            spawnBullet(p, pr);
+            spawnBullet(p, pr, -1.0, 0.5, 1);
         }
-        if (IsKeyPressed(KEY_KP_0))
+        if (IsKeyPressed(KEY_KP_0) || players[1].powerUp.machineGun)
         {
             p = players[1];
-            spawnBullet(p, pr);
+            spawnBullet(p, pr, -1.0, 0.5, 1);
         }
     }
 }
 
-void powerUps(powerUp *pu, char *map, player *p)
+void givePowerUp(player *p, powerUp *pu, projectileList *pr)
+{
+    switch (pu->index)
+    {
+    case 10: // increase player speed
+        p->speed = 0.2;
+        p->powerUp.timer = 60 * 5;
+    case 1: // increase bullet speed
+        p->powerUp.sniper = true;
+        p->powerUp.timer = 60 * 5;
+    case 0: // auto shoot and 'noise' in the shots
+        p->powerUp.machineGun = true;
+        p->powerUp.timer = 60 * 5;
+    case 3: // summons dvd enemy
+        printf("ajouter dvd");
+    case 20: // bomb sends bullets
+        for (int i = 0; i < 72; i++)
+        {
+            float size = (float)(rand() % 9) / 10;
+            spawnBullet(*p, pr, i * 5, size, 0);
+        }
+    case 5: // life + 1
+        printf("life + 1 a ajouter");
+    }
+}
+
+void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
 {
 
     if (pu->timer <= 0)
@@ -321,13 +347,13 @@ void powerUps(powerUp *pu, char *map, player *p)
         // check if a player takes it
         for (int i = 0; i < 2; i++)
         {
-            player pla = p[i];
-            Rectangle hitboxPlayer = {pla.posX - pla.size / 2, pla.posY - pla.size / 2, pla.size, pla.size};
+            player *pla = &p[i];
+            Rectangle hitboxPlayer = {pla->posX - pla->size / 2, pla->posY - pla->size / 2, pla->size, pla->size};
             Rectangle hitboxPowerUp = {pu->posX, pu->posY, 2, 2};
             // printf("%f %f",pla.posX, pla.posY);
             if (CheckCollisionRecs(hitboxPlayer, hitboxPowerUp))
             { // effects of the power up
-                // givePowerUp()
+                givePowerUp(pla, pu, pr);
                 pu->posY = 1000000; // disappears from the map
                 pu->timer = 60 * 15;
                 pu->hasSpawnYet = false;
@@ -358,19 +384,20 @@ int main(void)
 {
 
     initGame();
-
-    player p1 = {2, 2, 0.8, 0.1, 10, 0};
-    player p2 = {20, 13, 0.8, 0.1, 10, 1};
+    player t;
+    powerUpPlayer pupl = {0, 0, 0, 0, 0};
+    player p1 = {2, 2, 0.8, 0.1, 10, 0, pupl};
+    player p2 = {20, 13, 0.8, 0.1, 10, 1, pupl};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
-    powerUp pu = {120, 0, 100000, false, 0, 0, 0}; // spawned out of the map
+    powerUp pu = {120, 0, 100000, false, 0}; // the object, spawns out of the map
 
     float dUX = GetScreenWidth() / (float)W;
     float dUY = GetScreenHeight() / (float)H;
     float dU = dUX < dUY ? dUX : dUY;
 
-    const char *nom = "./YskTANKycklaba/src/Game/map.txt";
+    const char *nom = "./jeu/src/Game/map.txt";
     char *txt = LoadFileText(nom);
 
     // gives a random seed to make random random or random isn't random

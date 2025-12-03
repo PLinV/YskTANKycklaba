@@ -2,6 +2,16 @@
 #include <stdlib.h>
 #include <raylib.h>
 
+typedef struct powerUpPlayer // the logic object (sub type) in player
+{
+    int timer;
+    bool bomb;
+    bool machineGun;
+    bool sniper;
+    bool speed;
+
+} powerUpPlayer;
+
 typedef struct player
 {
     float posX; // top left corner hitbox, in tiles
@@ -10,6 +20,7 @@ typedef struct player
     float speed;          // in tiles
     float aimOrientation; // 0-
     int playerId;
+    powerUpPlayer powerUp;
 
 } player;
 
@@ -40,15 +51,7 @@ typedef struct powerUp // the physical object
     float posX;
     float posY;
     bool hasSpawnYet;
-} powerUp;
-
-typedef struct powerUpPlayer // the logic object (sub type) in player
-{
-    int timer;
-    bool bomb;
-    bool sniper;
-    bool enemyDebuff;
-
+    int index; // (0-5) depending on what effect
 } powerUp;
 
 #define W 25 // tile map, number of tiles

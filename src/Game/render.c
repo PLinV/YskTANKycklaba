@@ -43,7 +43,8 @@ void drawPlayers(float dU, player *players)
         // body
         DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 255, 0, i * 255, 255});
         // canon
-        DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, 1 * dU, 0.1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255});
+        int canon_size = p->powerUp.sniper ? 2 : 1;
+        DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, canon_size * dU, 0.1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255});
     }
 }
 
@@ -62,6 +63,6 @@ void drawProjectiles(float dU, projectileList *pr)
 void drawPowerUp(float dU, powerUp pu)
 {
     Color c = {123, 62, 167, 255};
-    Rectangle puShape = {pu.posX  * dU, pu.posY * dU, 2 * dU, 2 * dU};
+    Rectangle puShape = {pu.posX * dU, pu.posY * dU, 2 * dU, 2 * dU};
     DrawRectangleRec(puShape, c);
 }
