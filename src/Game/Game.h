@@ -12,5 +12,5 @@ void actions(player *players, projectileList *pr);
 void spawnBullet(player p, projectileList *pr, float custom_orientation, float size, int bounce_left, float speed);
 void powerUps(powerUp *pu, char *map, player *p, projectileList *pr);
 void updateProjectiles(projectileList *pr, player *p, char *map);
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map);
+int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map, bool isPlayer);
 void initGame();

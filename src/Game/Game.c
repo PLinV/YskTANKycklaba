@@ -19,7 +19,7 @@ void mainLoop(player *p, projectileList *pr, powerUp *pu, float dU, char *map)
     drawProjectiles(dU, pr);
 }
 
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map)
+int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map, bool isPlayer)
 { // arg called player but applies as well to projectiles
 
     // checks if hitbox collides in a direction (either vertical or horizontal)
@@ -36,7 +36,7 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
                     Rectangle obstacle = {i, j, 1, 1};
                     if (CheckCollisionRecs(newPlayerPos, obstacle))
                     {
-                        if (map[(j * W + i) * 2] == '2')
+                        if (map[(j * W + i) * 2] == '2' && !isPlayer)
                         {
                             map[(j * W + i) * 2] = '0';
                         }
@@ -58,12 +58,16 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
         {
             for (int j = 0; j < H; j++)
             {
-                if (map[(j * W + i) * 2] == '1')
+                if (map[(j * W + i) * 2] == '1' || map[(j * W + i) * 2] == '2')
                 {
                     Rectangle newPlayerPos = {player.x, player.y + velocity, player.width, player.height};
                     Rectangle obstacle = {i, j, 1, 1};
                     if (CheckCollisionRecs(newPlayerPos, obstacle))
                     {
+                        if (map[(j * W + i) * 2] == '2' && !isPlayer)
+                        {
+                            map[(j * W + i) * 2] = '0';
+                        }
                         res = true;
                         break;
                     }
@@ -86,7 +90,7 @@ void movePlayers(player *players, char *map)
         float x_velocity = 0.0f;
         float y_velocity = 0.0f;
 
-        switch (i) // mouvement pour chaque joueur
+        switch (i) // mouvement for each player
         {
         case 0:
             if (IsKeyDown(KEY_A))
@@ -139,11 +143,11 @@ void movePlayers(player *players, char *map)
         // DrawRectangle(PlayerHitbox.x * 5, PlayerHitbox.y * 5, PlayerHitbox.width * 5, PlayerHitbox.height * 5, RED);
 
         // checker si collision, si oui, return space left
-        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map))
+        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map, true))
         {
             p->posX += x_velocity;
         }
-        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map))
+        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, true))
         {
             p->posY += y_velocity;
         }
@@ -183,7 +187,7 @@ void updateProjectiles(projectileList *pr, player *p, char *map)
         checkPlayersGettingHit(proj, ProjHitbox, p);
 
         // wall hits
-        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map))
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, false))
         {
             proj->posX += proj->speedX;
         }
@@ -202,7 +206,7 @@ void updateProjectiles(projectileList *pr, player *p, char *map)
                 //  because listRem is changing the very list we're iterating on
             }
         }
-        if (!IsThereAnObstacle(ProjHitbox, proj->speedY, false, map))
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedY, false, map, false))
         {
             proj->posY += proj->speedY;
         }
@@ -374,7 +378,7 @@ void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
             int randomY = rand() % H;
             Rectangle hitbox = {randomX, randomY, 2, 2};
 
-            if (!IsThereAnObstacle(hitbox, 0, false, map))
+            if (!IsThereAnObstacle(hitbox, 0, false, map, false))
             {
                 int randomIndex = rand() % 6;
                 pu->index = randomIndex;
@@ -457,12 +461,18 @@ int main(void)
     // gives a random seed to make random random or random isn't random
     srand(time(NULL));
 
-    const char *caca = GetGamepadName(0);
-    printf("Detected gamepad name: %s\n", GetGamepadName(0));
-    if (IsGamepadAvailable(0))
+    int playersCount = 1;
+    int gamepadsCount = 0;
+
+    while (IsGamepadAvailable(gamepadsCount) == 1)
     {
-        printf("Gamepad connected\n");
+        gamepadsCount++;
+        printf("%s\n", GetGamepadName(gamepadsCount));
     }
+    printf("%d gamepads available  \n", gamepadsCount);
+    int keyboardCount = playersCount - gamepadsCount;
+    keyboardCount = (keyboardCount > 2) ? 2 : keyboardCount;
+    printf("%d\n", keyboardCount);
 
     while (!WindowShouldClose())
     {
