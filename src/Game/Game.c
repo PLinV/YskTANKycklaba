@@ -30,12 +30,16 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
         { // yes it's not fucking optimized but it's starts lagging at 15000 projectiles so ...
             for (int j = 0; j < H; j++)
             {
-                if (map[(j * W + i) * 2] == '1')
+                if (map[(j * W + i) * 2] == '1' || map[(j * W + i) * 2] == '2')
                 {
                     Rectangle newPlayerPos = {player.x + velocity, player.y, player.width, player.height};
                     Rectangle obstacle = {i, j, 1, 1};
                     if (CheckCollisionRecs(newPlayerPos, obstacle))
                     {
+                        if (map[(j * W + i) * 2] == '2')
+                        {
+                            map[(j * W + i) * 2] = '0';
+                        }
                         res = true;
                         break;
                     }
@@ -259,7 +263,7 @@ void listRem(int projectileIndex, projectileList *pr)
     pr->size -= 1;
 
     // change capacity
-    if (pr->capacity >= pr->size + 16)
+    if (pr->capacity > pr->size + 8)
     {
         projectile *tmp = (projectile *)realloc(pr->data, sizeof(projectile) * (pr->capacity - 8));
         if (tmp == NULL)
@@ -273,11 +277,11 @@ void listRem(int projectileIndex, projectileList *pr)
     }
 }
 
-void spawnBullet(player p, projectileList *pr, float custom_orientation, float size, int bounce_left)
+void spawnBullet(player p, projectileList *pr, float custom_orientation, float size, int bounce_left, float bullet_speed)
 {
     float aimOrientation = custom_orientation == -1 ? p.aimOrientation : custom_orientation;
-    float speedX = 0.15 * cosf(aimOrientation * 2 * PI / 360);
-    float speedY = 0.15 * sinf(aimOrientation * 2 * PI / 360);
+    float speedX = bullet_speed * cosf(aimOrientation * 2 * PI / 360);
+    float speedY = bullet_speed * sinf(aimOrientation * 2 * PI / 360);
     projectile newProjectile = {p.playerId, p.posX, p.posY, speedX, speedY, p.aimOrientation, size, bounce_left};
     listAdd(pr, newProjectile);
 }
@@ -286,16 +290,39 @@ void actions(player *players, projectileList *pr)
 {
     for (int i = 0; i < 2; i++) // iterating on every player
     {
-        player p;
-        if (IsKeyPressed(KEY_SPACE) || players[0].powerUp.machineGun)
+
+        player *p = &players[i];
+        int single_shot_key;
+        if (i == 0)
         {
-            p = players[0];
-            spawnBullet(p, pr, -1.0, 0.5, 1);
+            single_shot_key = KEY_SPACE;
         }
-        if (IsKeyPressed(KEY_KP_0) || players[1].powerUp.machineGun)
+        else
+        { // i == 1
+            single_shot_key = KEY_KP_0;
+        }
+        if (p->shootTimer > 0)
         {
-            p = players[1];
-            spawnBullet(p, pr, -1.0, 0.5, 1);
+            p->shootTimer -= 1;
+            continue;
+        }
+        else
+
+        {
+            if (IsKeyPressed(single_shot_key) && !p->powerUp.machineGun)
+            {
+
+                float speed = p->powerUp.sniper ? 0.3 : 0.15;
+                spawnBullet(*p, pr, -1.0, 0.5, 1, speed);
+                p->shootTimer = 15;
+            }
+            if (p->powerUp.machineGun)
+            {
+
+                float random_orientation = (p->aimOrientation + rand() % 40) - 20;
+                spawnBullet(*p, pr, random_orientation, 0.3, 0, 0.15);
+                p->shootTimer = 3;
+            }
         }
     }
 }
@@ -304,25 +331,35 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
 {
     switch (pu->index)
     {
-    case 10: // increase player speed
-        p->speed = 0.2;
+    case 0: // increase player speed
+        p->speed = 0.15;
         p->powerUp.timer = 60 * 5;
+        break;
     case 1: // increase bullet speed
         p->powerUp.sniper = true;
         p->powerUp.timer = 60 * 5;
-    case 0: // auto shoot and 'noise' in the shots
+        break;
+    case 2: // auto shoot and 'noise' in the shots
         p->powerUp.machineGun = true;
         p->powerUp.timer = 60 * 5;
+        break;
     case 3: // summons dvd enemy
-        printf("ajouter dvd");
-    case 20: // bomb sends bullets
-        for (int i = 0; i < 72; i++)
+        float speed = 0.1;
+        float speedX = speed * cosf(p->aimOrientation * 2 * PI / 360);
+        float speedY = speed * sinf(p->aimOrientation * 2 * PI / 360);
+        projectile dvd = {p->playerId, pu->posX + 1, pu->posY + 1, speedX, speedY, p->aimOrientation, 1.5, 15};
+        listAdd(pr, dvd);
+        break;
+    case 4: // bomb sends bullets
+        for (int i = 0; i < 48; i++)
         {
             float size = (float)(rand() % 9) / 10;
-            spawnBullet(*p, pr, i * 5, size, 0);
+            spawnBullet(*p, pr, i * 7.5, size, 0, 0.1);
         }
+        break;
     case 5: // life + 1
         printf("life + 1 a ajouter");
+        break;
     }
 }
 
@@ -339,6 +376,8 @@ void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
 
             if (!IsThereAnObstacle(hitbox, 0, false, map))
             {
+                int randomIndex = rand() % 6;
+                pu->index = randomIndex;
                 pu->posX = (float)randomX;
                 pu->posY = (float)randomY;
                 pu->hasSpawnYet = true;
@@ -350,19 +389,34 @@ void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
             player *pla = &p[i];
             Rectangle hitboxPlayer = {pla->posX - pla->size / 2, pla->posY - pla->size / 2, pla->size, pla->size};
             Rectangle hitboxPowerUp = {pu->posX, pu->posY, 2, 2};
-            // printf("%f %f",pla.posX, pla.posY);
             if (CheckCollisionRecs(hitboxPlayer, hitboxPowerUp))
             { // effects of the power up
                 givePowerUp(pla, pu, pr);
                 pu->posY = 1000000; // disappears from the map
-                pu->timer = 60 * 15;
+                pu->timer = 60 * 1;
                 pu->hasSpawnYet = false;
             }
         }
     }
     else
-    { // printf("%d\n", pu->timer);
+    {
         pu->timer -= 1;
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        player *pla = &p[i];
+
+        if (pla->powerUp.timer == 0)
+        {
+            pla->powerUp.machineGun = false;
+            pla->powerUp.sniper = false;
+            pla->speed = 0.1;
+            pla->powerUp.timer = -1;
+        }
+        if (pla->powerUp.timer > 0)
+        {
+            pla->powerUp.timer -= 1;
+        }
     }
 }
 
@@ -385,9 +439,9 @@ int main(void)
 
     initGame();
     player t;
-    powerUpPlayer pupl = {0, 0, 0, 0, 0};
-    player p1 = {2, 2, 0.8, 0.1, 10, 0, pupl};
-    player p2 = {20, 13, 0.8, 0.1, 10, 1, pupl};
+    powerUpPlayer pupl = {0, 0, 0};
+    player p1 = {2, 2, 0.8, 0.1, 10, 0, 0, pupl};
+    player p2 = {20, 13, 0.8, 0.1, 10, 1, 0, pupl};
     player p[2] = {p1, p2};
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
@@ -397,11 +451,18 @@ int main(void)
     float dUY = GetScreenHeight() / (float)H;
     float dU = dUX < dUY ? dUX : dUY;
 
-    const char *nom = "./jeu/src/Game/map.txt";
+    const char *nom = "./YskTANKycklaba/src/Game/map.txt";
     char *txt = LoadFileText(nom);
 
     // gives a random seed to make random random or random isn't random
     srand(time(NULL));
+
+    const char *caca = GetGamepadName(0);
+    printf("Detected gamepad name: %s\n", GetGamepadName(0));
+    if (IsGamepadAvailable(0))
+    {
+        printf("Gamepad connected\n");
+    }
 
     while (!WindowShouldClose())
     {

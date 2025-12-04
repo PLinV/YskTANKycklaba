@@ -5,10 +5,8 @@
 typedef struct powerUpPlayer // the logic object (sub type) in player
 {
     int timer;
-    bool bomb;
     bool machineGun;
     bool sniper;
-    bool speed;
 
 } powerUpPlayer;
 
@@ -20,6 +18,7 @@ typedef struct player
     float speed;          // in tiles
     float aimOrientation; // 0-
     int playerId;
+    int shootTimer;
     powerUpPlayer powerUp;
 
 } player;
