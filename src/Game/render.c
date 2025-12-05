@@ -39,13 +39,13 @@ void drawEveryTile(float dU, char *map)
 
 void drawPlayers(float dU, player *players, int playerCount)
 {
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < playerCount; i++)
     {
         player *p = &players[i];
         Vector2 pos = {(p->posX - p->size / 2), (p->posY - p->size / 2)};
 
         // body
-        DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 255, 0, i * 255, 255});
+        DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 60, i * 100, i * 60, 255});
         // canon
         float canon_size = p->powerUp.sniper ? 1.5 : 1.0;
         DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, canon_size * dU, 0.1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255});
@@ -58,9 +58,8 @@ void drawProjectiles(float dU, projectileList *pr)
     {
         projectile proj = pr->data[i];
         Rectangle projShape = {(proj.posX - proj.size / 2) * dU, (proj.posY - proj.size / 2) * dU, proj.size * dU, proj.size * dU};
-        Color c = {0, 0, proj.playerId * 255, 255};
+        Color c = {proj.playerId * 60, proj.playerId * 100, proj.playerId * 60, 255};
         DrawRectangleRec(projShape, c);
-        // DrawRectanglePro(projShape, (Vector2){0, 0}, proj.Orientation, c);
     }
 }
 

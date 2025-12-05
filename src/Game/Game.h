@@ -4,13 +4,11 @@
 
 #include "render.h"
 
-void mainLoop(player *p, int pC,projectileList *pr, powerUp *pu, float dU, char *map);
-void movePlayers(player *p,int pC, char *map);
-void listAdd(projectileList *pr, projectile p);
-void listRem(int projectileIndex, projectileList *pr);
+void movePlayers(player *players, int pC, char *map);
 void actions(player *players, int pC, projectileList *pr);
-void spawnBullet(player p, projectileList *pr, float custom_orientation, float size, int bounce_left, float speed);
-void powerUps(powerUp *pu, char *map, player *p,int pC, projectileList *pr);
-void updateProjectiles(projectileList *pr, player *p, char *map, int pC);
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical, char *map, bool isPlayer);
-void initGame();
+void updateProjectiles(projectileList *pr, player *p, int pC, char *map);
+void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr);
+void drawEveryTile(float dU, char *map);
+void drawPlayers(float dU, player *p, int playerCount);
+void drawProjectiles(float dU, projectileList *pr);
+void drawPowerUp(float dU, powerUp pu);
