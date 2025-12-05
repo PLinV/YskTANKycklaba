@@ -37,7 +37,7 @@ void drawEveryTile(float dU, char *map)
     DrawRectangle(60 * dU, 60 * dU, 30 * dU, 40 * dU, RED);
 }
 
-void drawPlayers(float dU, player *players)
+void drawPlayers(float dU, player *players, int playerCount)
 {
     for (int i = 0; i < 2; i++)
     {

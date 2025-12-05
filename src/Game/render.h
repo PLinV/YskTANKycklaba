@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <raylib.h>
@@ -10,6 +11,20 @@ typedef struct powerUpPlayer // the logic object (sub type) in player
 
 } powerUpPlayer;
 
+typedef struct movement
+{
+    int keyUp;
+    int keyDown;
+    int keyLeft;
+    int keyRight;
+    int keyTurnRight;
+    int keyTurnLeft;
+    int keyShoot;
+    bool usesController;
+    int controllerIndex;
+
+} movement;
+
 typedef struct player
 {
     float posX; // top left corner hitbox, in tiles
@@ -20,6 +35,7 @@ typedef struct player
     int playerId;
     int shootTimer;
     powerUpPlayer powerUp;
+    movement move;
 
 } player;
 
@@ -58,6 +74,6 @@ typedef struct powerUp // the physical object
 
 float tileMap(float dU, char *map);
 void drawEveryTile(float dU, char *map);
-void drawPlayers(float dU, player *p);
+void drawPlayers(float dU, player *p, int playerCount);
 void drawProjectiles(float dU, projectileList *pr);
 void drawPowerUp(float dU, powerUp pu);

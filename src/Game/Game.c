@@ -2,19 +2,20 @@
 #include <stdlib.h>
 #include <raylib.h>
 #include <math.h>
+#include <time.h>
 // pr lancer : gcc YskTANKycklaba/src/Game/*.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -I./raylib/src -L./raylib/src && ./a.out
 #include "Game.h"
 
-void mainLoop(player *p, projectileList *pr, powerUp *pu, float dU, char *map)
+void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map)
 {
     // get inputs and move player (in tiles unit)
-    movePlayers(p, map);
-    actions(p, pr);
-    updateProjectiles(pr, p, map);
-    powerUps(pu, map, p, pr);
+    movePlayers(p, playerCount, map);
+    actions(p, playerCount, pr);
+    updateProjectiles(pr, p, map, playerCount);
+    powerUps(pu, map, p, playerCount, pr);
     // render everything (scale unit)
     drawEveryTile(dU, map);
-    drawPlayers(dU, p);
+    drawPlayers(dU, p, playerCount);
     drawPowerUp(dU, *pu);
     drawProjectiles(dU, pr);
 }
@@ -80,111 +81,109 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
         return res;
     }
 }
-
-void movePlayers(player *players, char *map)
+void movePlayers(player *players, int pC, char *map)
 {
-    for (int i = 0; i < 2; i++)
+    const float DEADZONE = 0.2f;
+
+    for (int i = 0; i < pC; i++)
     {
-        player *p = &players[i];
-        // movement
         float x_velocity = 0.0f;
         float y_velocity = 0.0f;
+        player *p = &players[i];
 
-        switch (i) // mouvement for each player
+        if (p->move.usesController && p->move.controllerIndex >= 0)
         {
-        case 0:
-            if (IsKeyDown(KEY_A))
-                x_velocity -= p->speed;
-            if (IsKeyDown(KEY_D))
-                x_velocity += p->speed;
-            if (IsKeyDown(KEY_W))
-                y_velocity -= p->speed;
-            if (IsKeyDown(KEY_S))
-                y_velocity += p->speed;
-            if (IsKeyDown(KEY_Q))
-                p->aimOrientation -= 3.0f;
-            if (IsKeyDown(KEY_E))
-                p->aimOrientation += 3.0f;
-            break;
+            int g = p->move.controllerIndex;
 
-        case 1:
-            if (IsKeyDown(KEY_LEFT))
-                x_velocity -= p->speed;
-            if (IsKeyDown(KEY_RIGHT))
-                x_velocity += p->speed;
-            if (IsKeyDown(KEY_UP))
-                y_velocity -= p->speed;
-            if (IsKeyDown(KEY_DOWN))
-                y_velocity += p->speed;
-            if (IsKeyDown(KEY_KP_1))
-                p->aimOrientation += 3.0f;
-            if (IsKeyDown(KEY_KP_2))
-                p->aimOrientation -= 3.0f;
-            break;
-        }
-        if (p->aimOrientation > 360)
-        {
-            p->aimOrientation = 0;
-        }
-        if (p->aimOrientation < 0)
-        {
-            p->aimOrientation = 360;
-        }
+            float leftStickX = GetGamepadAxisMovement(g, GAMEPAD_AXIS_LEFT_X);
+            float leftStickY = GetGamepadAxisMovement(g, GAMEPAD_AXIS_LEFT_Y);
+            float rightStickX = GetGamepadAxisMovement(g, GAMEPAD_AXIS_RIGHT_X);
+            float rightStickY = GetGamepadAxisMovement(g, GAMEPAD_AXIS_RIGHT_Y);
 
-        if (fabs(x_velocity) > 0 && fabs(y_velocity) > 0)
-        {
-            // normalize velocity, si vous comprennez pas cherchez sur internet c normal
-            x_velocity /= sqrt(2);
-            y_velocity /= sqrt(2);
-        }
+            // apply deadzone
+            if (fabs(leftStickX) < DEADZONE)
+                leftStickX = 0.0f;
+            if (fabs(leftStickY) < DEADZONE)
+                leftStickY = 0.0f;
+            if (fabs(rightStickX) < DEADZONE)
+                rightStickX = 0.0f;
+            if (fabs(rightStickY) < DEADZONE)
+                rightStickY = 0.0f;
 
-        // update player position
-        Rectangle PlayerHitbox = {p->posX - p->size / 2, p->posY - p->size / 2, p->size, p->size};
-        // DrawRectangle(PlayerHitbox.x * 5, PlayerHitbox.y * 5, PlayerHitbox.width * 5, PlayerHitbox.height * 5, RED);
+            // aim: your custom system where 0=down, 90=left, 180=up, 270=right, then +90° fix
+            if (rightStickX != 0.0f || rightStickY != 0.0f)
+            {
+                float angle = atan2f(-rightStickX, rightStickY) * (180.0f / PI);
+                angle += 90.0f;
+                if (angle < 0)
+                    angle += 360.0f;
+                else if (angle >= 360.0f)
+                    angle -= 360.0f;
+                p->aimOrientation = angle;
+            }
 
-        // checker si collision, si oui, return space left
-        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map, true))
-        {
-            p->posX += x_velocity;
-        }
-        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, true))
-        {
-            p->posY += y_velocity;
-        }
-    }
-}
-
-void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p)
-{
-    for (int j = 0; j < 2; j++)
-    {
-        if (j == proj->playerId)
-        {
-            continue;
-            // skips for its own player
+            x_velocity += p->speed * leftStickX;
+            y_velocity += p->speed * leftStickY;
         }
         else
         {
-            player pla = p[j];
-            Rectangle PlayerHitbox = {pla.posX - pla.size / 2, pla.posY - pla.size / 2, pla.size, pla.size};
-            if (CheckCollisionRecs(ProjHitbox, PlayerHitbox))
-            {
-                player *tmp = &p[j];
-                tmp->posX = 1000000;
-                // basically kills it bruh
-            }
+            if (IsKeyDown(p->move.keyUp))
+                y_velocity -= p->speed;
+            if (IsKeyDown(p->move.keyDown))
+                y_velocity += p->speed;
+            if (IsKeyDown(p->move.keyLeft))
+                x_velocity -= p->speed;
+            if (IsKeyDown(p->move.keyRight))
+                x_velocity += p->speed;
+            if (IsKeyDown(p->move.keyTurnRight))
+                p->aimOrientation += 3.0f;
+            if (IsKeyDown(p->move.keyTurnLeft))
+                p->aimOrientation -= 3.0f;
+        }
+
+        // wrap aimOrientation properly
+        while (p->aimOrientation >= 360.0f)
+            p->aimOrientation -= 360.0f;
+        while (p->aimOrientation < 0.0f)
+            p->aimOrientation += 360.0f;
+
+        if (fabs(x_velocity) > 0.0f && fabs(y_velocity) > 0.0f)
+        {
+            x_velocity /= sqrtf(2.0f);
+            y_velocity /= sqrtf(2.0f);
+        }
+
+        Rectangle PlayerHitbox = {p->posX - p->size / 2.0f, p->posY - p->size / 2.0f, p->size, p->size};
+        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map, true))
+            p->posX += x_velocity;
+        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, true))
+            p->posY += y_velocity;
+    }
+}
+void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, int pC)
+{
+    for (int j = 0; j < pC; j++)
+    {
+        if (p[j].playerId == proj->playerId)
+            continue; // skip owner by id
+
+        player *pla = &p[j];
+        Rectangle PlayerHitbox = {pla->posX - pla->size / 2, pla->posY - pla->size / 2, pla->size, pla->size};
+        if (CheckCollisionRecs(ProjHitbox, PlayerHitbox))
+        {
+            pla->posX = 1000000; // kill
         }
     }
 }
 
-void updateProjectiles(projectileList *pr, player *p, char *map)
+void updateProjectiles(projectileList *pr, player *p, char *map, int pC)
 {
     for (int i = pr->size - 1; i >= 0; i--) // iterating on each projectile
     {
         projectile *proj = &pr->data[i];
         Rectangle ProjHitbox = {proj->posX - proj->size / 2, proj->posY - proj->size / 2, proj->size, proj->size};
         // player hits
-        checkPlayersGettingHit(proj, ProjHitbox, p);
+        checkPlayersGettingHit(proj, ProjHitbox, p, pC);
 
         // wall hits
         if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, false))
@@ -290,21 +289,12 @@ void spawnBullet(player p, projectileList *pr, float custom_orientation, float s
     listAdd(pr, newProjectile);
 }
 
-void actions(player *players, projectileList *pr)
+void actions(player *players, int pC, projectileList *pr)
 {
-    for (int i = 0; i < 2; i++) // iterating on every player
+    for (int i = 0; i < pC; i++) // iterating on every player
     {
 
         player *p = &players[i];
-        int single_shot_key;
-        if (i == 0)
-        {
-            single_shot_key = KEY_SPACE;
-        }
-        else
-        { // i == 1
-            single_shot_key = KEY_KP_0;
-        }
         if (p->shootTimer > 0)
         {
             p->shootTimer -= 1;
@@ -313,9 +303,8 @@ void actions(player *players, projectileList *pr)
         else
 
         {
-            if (IsKeyPressed(single_shot_key) && !p->powerUp.machineGun)
+            if (IsKeyPressed(p->move.keyShoot) && !p->powerUp.machineGun)
             {
-
                 float speed = p->powerUp.sniper ? 0.3 : 0.15;
                 spawnBullet(*p, pr, -1.0, 0.5, 1, speed);
                 p->shootTimer = 15;
@@ -367,7 +356,7 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
     }
 }
 
-void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
+void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr)
 {
 
     if (pu->timer <= 0)
@@ -388,7 +377,7 @@ void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
             }
         }
         // check if a player takes it
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < pC; i++)
         {
             player *pla = &p[i];
             Rectangle hitboxPlayer = {pla->posX - pla->size / 2, pla->posY - pla->size / 2, pla->size, pla->size};
@@ -406,7 +395,7 @@ void powerUps(powerUp *pu, char *map, player *p, projectileList *pr)
     {
         pu->timer -= 1;
     }
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < pC; i++)
     {
         player *pla = &p[i];
 
@@ -440,13 +429,14 @@ void initGame()
 
 int main(void)
 {
+    int playersCount = 4;
 
     initGame();
     player t;
     powerUpPlayer pupl = {0, 0, 0};
-    player p1 = {2, 2, 0.8, 0.1, 10, 0, 0, pupl};
-    player p2 = {20, 13, 0.8, 0.1, 10, 1, 0, pupl};
-    player p[2] = {p1, p2};
+
+    player *p = (player *)malloc(sizeof(player) * playersCount);
+
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8)); // initializing projectile list
     projectileList prList = {0, ptr, 8};
     powerUp pu = {120, 0, 100000, false, 0}; // the object, spawns out of the map
@@ -461,18 +451,54 @@ int main(void)
     // gives a random seed to make random random or random isn't random
     srand(time(NULL));
 
-    int playersCount = 1;
     int gamepadsCount = 0;
-
-    while (IsGamepadAvailable(gamepadsCount) == 1)
+    for (int i = 0; i < 4; i++) // GLFW supports up to 4 gamepads reliably
     {
-        gamepadsCount++;
-        printf("%s\n", GetGamepadName(gamepadsCount));
+        if (IsGamepadAvailable(i))
+        {
+
+            printf("Gamepad %d: %s\n", i, GetGamepadName(i));
+            gamepadsCount++;
+        }
     }
-    printf("%d gamepads available  \n", gamepadsCount);
+    printf("%d gamepads available\n", gamepadsCount);
+
     int keyboardCount = playersCount - gamepadsCount;
     keyboardCount = (keyboardCount > 2) ? 2 : keyboardCount;
     printf("%d\n", keyboardCount);
+
+    movement move1 = {KEY_W, KEY_S, KEY_A, KEY_D, KEY_E, KEY_Q, KEY_SPACE, false, -1};
+    movement move2 = {KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_KP_2, KEY_KP_1, KEY_KP_0, false, -1};
+    movement move3 = {0, 0, 0, 0, 0, 0, 0, false, -1};
+    movement move4 = {0, 0, 0, 0, 0, 0, 0, false, -1};
+
+    movement moves[4] = {move1, move2, move3, move4};
+    for (int i = 0; i < playersCount; i++)
+    {
+        p[i] = (player){
+            .posX = (float)((i + 1) * 2),
+            .posY = 2.0f,
+            .size = 0.8f,
+            .speed = 0.1f,
+            .aimOrientation = 0.0f,
+            .playerId = i, // assign unique player ids
+            .shootTimer = 0,
+            .powerUp = pupl,
+            .move = moves[i] // safe, stays in-bounds now
+        };
+
+        // controller assignment: only mark usesController for available gamepads
+        if (i < gamepadsCount)
+        {
+            p[i].move.usesController = true;
+            p[i].move.controllerIndex = i; // assign the actual gamepad index
+        }
+        else
+        {
+            p[i].move.usesController = false;
+            p[i].move.controllerIndex = -1;
+        }
+    }
 
     while (!WindowShouldClose())
     {
@@ -481,11 +507,14 @@ int main(void)
         float dUX = GetScreenWidth() / (float)W;
         float dUY = GetScreenHeight() / (float)H;
         float dU = dUX < dUY ? dUX : dUY; // dynamic resolution rendering
-        mainLoop(p, &prList, &pu, dU, txt);
+        mainLoop(p, playersCount, &prList, &pu, dU, txt);
         //----------------
+
         EndDrawing();
     }
     free(txt);
+    free(p);
+    free(ptr);
     CloseWindow();
     return 0;
 }
