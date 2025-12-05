@@ -7,6 +7,12 @@ typedef struct {
   int gamePlayed; // >= 0
 } User;
 
+// permet une instance user et de le renvoyer
+User* createUser(const char* newUsername);
+
+// on récupére un user via le username et on le renvoie
+User* getUser(const char* getUsername);
+
 // on récup le user via son username dans la db si il n'existe pas on le créer
 // renvoie le User créer ou trouver
 User* getOrCreateUser(const char* username);

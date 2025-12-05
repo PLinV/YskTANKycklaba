@@ -28,6 +28,60 @@ User* createUser(const char* newUsername) {
   return newUser;
 }
 
+User* getUser(const char* getUsername){
+  User* userFound = NULL;
+  int found = 0; // savoir si on a trouvé un user
+  FILE* file = fopen(USER_DATA_FILE, "r");
+
+  if (file == NULL) {
+    printf("aucun fichier utilisateur trouvé");
+    return NULL; 
+  }
+
+  char line[256]; // buffer pour une ligne entière
+  int lineNumber = 0;
+
+  while (fgets(line, sizeof(line), file) && (!found)) {
+     
+    lineNumber++;
+    line[strcspn(line, "\n")] = '\0';  // enlève le \n éventuel
+
+    char* token = strtok(line, ";");
+    if (strcmp(token, getUsername) == 0) {
+      found = 1;
+      char username[50];
+      strncpy(username, token, sizeof(username)-1);
+      username[sizeof(username)-1] = '\0';
+
+      token = strtok(NULL, ";");
+      if (token != NULL) {
+        int maxScore = atoi(token);
+
+        token = strtok(NULL, ";");
+        if (token != NULL) {
+          int gamePlayed = atoi(token);
+
+          // tout est correct: créer l'utilisateur
+          userFound = createUser(username);
+          userFound->maxScore = maxScore;
+          userFound->gamePlayed = gamePlayed;
+        } else {
+          printf("ligne %d : champ gamePlayed manquant.\n", lineNumber);
+        }
+
+      } else {
+        printf("ligne %d : champ maxScore manquant.\n", lineNumber);
+      }
+    }
+  }
+
+  if (!found) { 
+    return NULL;
+  }
+  fclose(file);
+  return userFound;
+}
+
 User* getOrCreateUser(const char* getUsername) {
   User* userFound = NULL;
   int found = 0; // savoir si on a trouvé un user
