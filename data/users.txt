@@ -1,5 +1,5 @@
-username;maxScore;gamesPlayed
-Alice;10;73
-hatem;13;2
-Bob;120;25
-goat;12;1
+username;maxScore;gamesPlayed;kill;death
+Alice;10;73;20;25
+hatem;13;2;45;21
+Bob;120;25;12;41
+goat;12;1;54;21

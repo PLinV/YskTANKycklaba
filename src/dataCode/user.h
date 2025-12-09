@@ -5,6 +5,8 @@ typedef struct {
   char username[50]; // limite de 50 character
   int maxScore; // >= 0
   int gamePlayed; // >= 0
+  int kill; // >= 0
+  int death; // >= 0
 } User;
 
 // permet une instance user et de le renvoyer
@@ -22,6 +24,10 @@ void updateUserStats(User* u, int newScore);
 
 // ajoute 1 a gamePlayed du user a chaque fin de partie
 void incrementGame(User* u);
+
+void incrementDeath(User* u);
+
+void incrementKill(User* u);
 
 // écrit toutes les structs User en mémoire dans le fichier
 int saveUsers(User* u1, User* u2);

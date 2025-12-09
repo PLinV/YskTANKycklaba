@@ -24,7 +24,8 @@ User* createUser(const char* newUsername) {
   strcpy(newUser->username, newUsername);
   newUser->gamePlayed = 0;
   newUser->maxScore = 0;
-
+  newUser->kill = 0;
+  newUser->death = 0;
   return newUser;
 }
 
@@ -56,19 +57,32 @@ User* getUser(const char* getUsername){
       token = strtok(NULL, ";");
       if (token != NULL) {
         int maxScore = atoi(token);
-
         token = strtok(NULL, ";");
         if (token != NULL) {
           int gamePlayed = atoi(token);
+          token = strtok(NULL, ";");
+          if (token !=NULL) {
+            int kill = atoi(token); 
+            token = strtok(NULL, ";");
+            if (token != NULL) {
+              int death = token;
 
-          // tout est correct: créer l'utilisateur
-          userFound = createUser(username);
-          userFound->maxScore = maxScore;
-          userFound->gamePlayed = gamePlayed;
+              // tout est correct => créer l'utilisateur
+              userFound = createUser(username);
+              userFound->maxScore = maxScore;
+              userFound->gamePlayed = gamePlayed;
+              userFound->kill = kill;
+              
+
+            } else {
+              printf("ligne %d : champ death manquant.\n", lineNumber);
+            }
+          } else {
+            printf("ligne %d : champ kill manquant.\n", lineNumber);
+          } 
         } else {
           printf("ligne %d : champ gamePlayed manquant.\n", lineNumber);
         }
-
       } else {
         printf("ligne %d : champ maxScore manquant.\n", lineNumber);
       }
@@ -110,19 +124,32 @@ User* getOrCreateUser(const char* getUsername) {
       token = strtok(NULL, ";");
       if (token != NULL) {
         int maxScore = atoi(token);
-
         token = strtok(NULL, ";");
         if (token != NULL) {
           int gamePlayed = atoi(token);
+          token = strtok(NULL, ";");
+          if (token !=NULL) {
+            int kill = atoi(token); 
+            token = strtok(NULL, ";");
+            if (token != NULL) {
+              int death = token;
 
-          // tout est correct: créer l'utilisateur
-          userFound = createUser(username);
-          userFound->maxScore = maxScore;
-          userFound->gamePlayed = gamePlayed;
+              // tout est correct => créer l'utilisateur
+              userFound = createUser(username);
+              userFound->maxScore = maxScore;
+              userFound->gamePlayed = gamePlayed;
+              userFound->kill = kill;
+              
+
+            } else {
+              printf("ligne %d : champ death manquant.\n", lineNumber);
+            }
+          } else {
+            printf("ligne %d : champ kill manquant.\n", lineNumber);
+          } 
         } else {
           printf("ligne %d : champ gamePlayed manquant.\n", lineNumber);
         }
-
       } else {
         printf("ligne %d : champ maxScore manquant.\n", lineNumber);
       }
@@ -142,6 +169,14 @@ void updateUserStats(User* u, int newMaxScore) {
 
 void incrementGame(User* u) {
   u->gamePlayed++;
+}
+
+void incrementDeath(User* u) {
+  u->death++;
+}
+
+void incrementKill(User* u) {
+  u->kill++;
 }
 
 //save les deux users dans le txt
