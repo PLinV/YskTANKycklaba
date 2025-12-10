@@ -7,7 +7,9 @@
 void movePlayers(player *players, int pC, char *map);
 void actions(player *players, int pC, projectileList *pr);
 void updateProjectiles(projectileList *pr, player *p, int pC, char *map);
+void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanceMinToPlayer);
 void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr);
+void listRem(int projectileIndex, projectileList *pr);
 void drawEveryTile(float dU, char *map);
 void drawPlayers(float dU, player *p, int playerCount);
 void drawProjectiles(float dU, projectileList *pr);

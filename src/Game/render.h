@@ -69,8 +69,8 @@ typedef struct powerUp // the physical object
     int index; // (0-5) depending on what effect
 } powerUp;
 
-#define W 25 // tile map, number of tiles
-#define H 16
+#define W 50 // tile map, number of tiles
+#define H 32
 
 float tileMap(float dU, char *map);
 void drawEveryTile(float dU, char *map);
