@@ -64,23 +64,6 @@ void movePlayers(player *players, int pC, char *map)
         float x_velocity = 0.0f;
         float y_velocity = 0.0f;
 
-        // Only print for the first player to avoid spamming 4x
-        if (i == 0 && p->move.usesController)
-        {
-            int g = p->move.controllerIndex;
-            printf("\n--- CONTROLLER DEBUG ---\n");
-            // Print first 6 axes (usually controllers have 4 to 6 axes)
-            for (int k = 0; k < 6; k++)
-            {
-                float val = GetGamepadAxisMovement(1, k);
-                if (fabsf(val) > 0.1f)
-                    printf("Axis %d is MOVING: %f\n", k, val);
-            }
-        }
-        // --- DEBUG END ---
-        // printf("GP%d: %s\n", 0, GetGamepadName(0));
-        // printf("%f\n", IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_THUMB));
-
         if (p->move.usesController && p->move.controllerIndex >= 0)
         {
             int g = p->move.controllerIndex;
@@ -183,7 +166,7 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map)
         checkPlayersGettingHit(proj, ProjHitbox, p, pC);
 
         // horizontal movement and collisions
-        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, false))
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, true))
         {
             proj->posX += proj->speedX;
         }
@@ -556,11 +539,6 @@ int main(void)
             p[i].move.controllerIndex = -1;
         }
     }
-    // In your main function, override the controller assignment for player 0
-    // Change this line: p[0].move.controllerIndex = detectedPadIndices[0];
-    // to this:
-    p[0].move.controllerIndex = 1; // Try forcing it to index 1 or 2
-    p[0].move.usesController = true;
 
     // main loop
     while (!WindowShouldClose())
