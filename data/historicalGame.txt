@@ -1,0 +1,1 @@
+usernameP1;usernameP2;scoreP1;scoreP2;winP;gameNum
