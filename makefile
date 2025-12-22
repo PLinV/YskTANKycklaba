@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -I./src   # inclut tous les headers dans src/
+CFLAGS = -I./src -I"C:/Program Files/raylib/w64devkit/x86_64-w64-mingw32/include"  # inclut tous les headers dans src/ et raylib
 
 # Détection de l'OS
 ifeq ($(OS),Windows_NT)
     # ----- Windows -----
-    RAYLIB_FLAGS = -lraylib -lopengl32 -lgdi32 -lwinmm
+    RAYLIB_FLAGS = -L"C:/Program Files/raylib/w64devkit/x86_64-w64-mingw32/lib" -lraylib -lopengl32 -lgdi32 -lwinmm
 else
     # ----- Linux -----
     RAYLIB_FLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
@@ -12,28 +12,29 @@ endif
 
 LDFLAGS = $(RAYLIB_FLAGS)
 
-EXEC = prog
+EXEC_GAME = prog
+EXEC_GAME = prog
 
-SRC = src/Game/Game.c \
-      src/Game/render.c \
-      src/Graphisme/graphisme.c \
-      src/Menu/menu.c \
-      src/Stat/stat.c
+SRC_GAME = src/Menu/menu.c \
+           src/Game/Game.c \
+           src/Game/render.c \
+           src/Stat/stat.c \
+           src/Graphisme/graphisme.c
 
-OBJ = $(SRC:.c=.o)
+OBJ_GAME = $(SRC_GAME:.c=.o)
 
-all: $(EXEC)
+all: $(EXEC_GAME)
 
-$(EXEC): $(OBJ)
+$(EXEC_GAME): $(OBJ_GAME)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ_GAME)
 
 cleanexe:
-	rm -f $(EXEC)
+	rm -f $(EXEC_GAME)
 
 mrproper: clean cleanexe

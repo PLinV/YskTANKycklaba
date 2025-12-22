@@ -3,7 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 #define INITIAL_CAPACITY 10
-#define USER_DATA_FILE "data/users.txt" // peut être a modifier 
+#define USER_DATA_FILE "YskTANKycklaba/data/users.txt" // peut être a modifier z
+
+//gcc \
+  YskTANKycklaba/src/dataCode/user.c \
+  -o user \
+  -Iraylib/src \
+  raylib/src/libraylib.a \
+  -lm -lpthread -ldl -lrt -lX11 -lGL
 
 
 // le tableau qui va stocker les deux users (on pourra essayer de faire avec trois)
@@ -65,7 +72,7 @@ User* getUser(const char* getUsername){
             int kill = atoi(token); 
             token = strtok(NULL, ";");
             if (token != NULL) {
-              int death = token;
+              int death = atoi(token);
 
               // tout est correct => créer l'utilisateur
               userFound = createUser(username);
@@ -132,7 +139,7 @@ User* getOrCreateUser(const char* getUsername) {
             int kill = atoi(token); 
             token = strtok(NULL, ";");
             if (token != NULL) {
-              int death = token;
+              int death = atoi(token);
 
               // tout est correct => créer l'utilisateur
               userFound = createUser(username);
@@ -182,7 +189,8 @@ void incrementKill(User* u) {
 //save les deux users dans le txt
 int saveUsers(User* u1, User* u2) {
   FILE* file = fopen(USER_DATA_FILE, "r");
-  FILE* temp = fopen("data/users.tmp", "w");
+  char* tempFile = "YskTANKycklaba/data/users.tmp";
+  FILE* temp = fopen(tempFile, "w");
   if (!temp) {
     printf("Erreur : impossible d'écrire le fichier temporaire.\n");
     return 0;
@@ -206,10 +214,10 @@ int saveUsers(User* u1, User* u2) {
     if (token == NULL) continue;
 
     if (strcmp(token, u1->username) == 0) {
-      fprintf(temp, "%s;%d;%d\n", u1->username, u1->maxScore, u1->gamePlayed);
+      fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore, u1->gamePlayed, u1->kill, u1->death);
       u1Written = 1;
     } else if (strcmp(token, u2->username) == 0) {
-      fprintf(temp, "%s;%d;%d\n", u2->username, u2->maxScore, u2->gamePlayed);
+      fprintf(temp, "%s;%d;%d;%d;%d\n", u2->username, u2->maxScore, u2->gamePlayed, u2->kill, u2->death);
       u2Written = 1;
     } else {
       fputs(originalLine, temp);
@@ -219,21 +227,29 @@ int saveUsers(User* u1, User* u2) {
 
   // Ajouter les utilisateurs qui n’existaient pas
   if (!u1Written)
-    fprintf(temp, "%s;%d;%d\n", u1->username, u1->maxScore, u1->gamePlayed);
+    fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore, u1->gamePlayed, u1->kill, u1->death);
+
   if (!u2Written)
-    fprintf(temp, "%s;%d;%d\n", u2->username, u2->maxScore, u2->gamePlayed);
+    fprintf(temp, "%s;%d;%d;%d;%d\n", u2->username, u2->maxScore, u2->gamePlayed, u2->kill, u2->death);
 
   fclose(file);
   fclose(temp);
 
   remove(USER_DATA_FILE);
-  rename("data/users.tmp", USER_DATA_FILE);
+  rename(tempFile, USER_DATA_FILE);
 
   return 1;
 }
 
+float getKdRatio(User* u) {
+  if (u->death == 0) {
+    return (float)u->kill;
+  } else {
+    return (float)u->kill / u->death;
+  }
+}
 
-
+/*
 int main() {
   // Récupération ou création de deux utilisateurs
   User* u1 = getOrCreateUser("Alice");
@@ -262,8 +278,8 @@ int main() {
 
   // Affichage pour vérifier
   printf("=== État actuel des utilisateurs ===\n");
-  printf("%s : Score Max = %d, Parties jouées = %d\n", u1->username, u1->maxScore, u1->gamePlayed);
-  printf("%s : Score Max = %d, Parties jouées = %d\n", u2->username, u2->maxScore, u2->gamePlayed);
+  printf("%s : Score Max = %d, Parties jouées = %d, kd ratio = %.2f\n", u1->username, u1->maxScore, u1->gamePlayed, getKdRatio(u1));
+  printf("%s : Score Max = %d, Parties jouées = %d, kd ratio = %.2f\n", u2->username, u2->maxScore, u2->gamePlayed, getKdRatio(u2));
 
   // Libération mémoire
   free(u1);
@@ -271,3 +287,4 @@ int main() {
 
   return 0;
 }
+*/

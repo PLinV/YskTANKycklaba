@@ -29,10 +29,12 @@ void incrementDeath(User* u);
 
 void incrementKill(User* u);
 
+float getKdRatio(User* u);
+
 // écrit toutes les structs User en mémoire dans le fichier
 int saveUsers(User* u1, User* u2);
 
 
-extern User* users[2]; // tableau dynamique des deux users
+extern User* users[2]; // tableau des deux users
 
 #endif
