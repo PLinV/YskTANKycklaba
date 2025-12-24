@@ -1,1 +1,4 @@
-usernameP1;usernameP2;scoreP1;scoreP2;winP;gameNum
+gameNum;usernameP1;usernameP2;scoreP1;scoreP2;winP
+1;paulin;hatem;200;300;2
+2;Alice;bob;400;300;1
+3;Paulin;Hatem;60;70;2
