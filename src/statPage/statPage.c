@@ -61,7 +61,6 @@
 
 
     int RunStats(void){
-      InitWindow(1000, 720, "STATS PAGE");
       SetTargetFPS(60);
 
       // partie titre
@@ -99,9 +98,14 @@
 
       while (!WindowShouldClose()) {
 
+        // --- DÉBUT DU DESSIN ---
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
         // si le bouton est cliqué => activer l'affichage du message
         if (DrawButton(&btnHome, "< Home", 20)) {
-            show = true;
+          EndDrawing();
+          break;
         }
 
         // input Users 
@@ -113,11 +117,6 @@
 
         // affiche le titre de la page stats
         DrawText(titre, center_x() - titreWidth/2, 50, fontSizeTitre, BLACK);
-        
-        // si show est vrai on affiche changer l'action
-        if (show) {
-          DrawText(msgBtnHome, center_x() - msgBtnHomeWidth/2, 110, fontSizeBtnHome, BLACK);
-        }
 
         // users
         InputTextBox(inputBox1, username1, 31, &active1);
@@ -151,6 +150,5 @@
         EndDrawing();
     }
 
-    CloseWindow();
     return 0;
   }

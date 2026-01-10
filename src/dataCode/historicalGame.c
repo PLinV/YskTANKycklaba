@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define HISTORICAL_GAME_DATA_FILE "YskTANKycklaba/data/historicalGame.txt" // peut-être à modifier
+#define HISTORICAL_GAME_DATA_FILE "data/historicalGame.txt" // peut-être à modifier
 // gcc \
   YskTANKycklaba/src/dataCode/historicalGame.c \
   -o historicalGame \

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define INITIAL_CAPACITY 10
-#define USER_DATA_FILE "YskTANKycklaba/data/users.txt" // peut être a modifier z
+#define USER_DATA_FILE "data/users.txt" // peut être a modifier 
 
 //gcc \
   YskTANKycklaba/src/dataCode/user.c \
@@ -79,7 +79,7 @@ User* getUser(const char* getUsername){
               userFound->maxScore = maxScore;
               userFound->gamePlayed = gamePlayed;
               userFound->kill = kill;
-              
+              userFound->death = death;
 
             } else {
               printf("ligne %d : champ death manquant.\n", lineNumber);
