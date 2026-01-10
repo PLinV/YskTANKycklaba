@@ -1,15 +1,16 @@
-#include <raylib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <raylib.h>
 
 #include "render.h"
 
-void mainLoop(player *p, projectileList *pr, float dU, char *map, int width,
-              int height, Texture2D bg);
-void movePlayers(player *p, char *map, int width, int height);
-void listAdd(projectileList *pr, projectile p);
-void actions(player *players, projectileList *pr);
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkVertical,
-                      char *map, int width, int height);
-void initGame();
-void RunGame(char *mapPath);
+void movePlayers(player *players, int pC, char *map);
+void actions(player *players, int pC, projectileList *pr);
+void updateProjectiles(projectileList *pr, player *p, int pC, char *map);
+void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanceMinToPlayer);
+void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr);
+void listRem(int projectileIndex, projectileList *pr);
+void drawEveryTile(float dU, char *map);
+void drawPlayers(float dU, player *p, int playerCount);
+void drawProjectiles(float dU, projectileList *pr);
+void drawPowerUp(float dU, powerUp pu);
