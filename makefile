@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I./src -I"C:/Program Files/raylib/w64devkit/x86_64-w64-mingw32/include"  # inclut tous les headers dans src/ et raylib
+CFLAGS = -I./src -I"./raylib/src"  # inclut tous les headers dans src/ et raylib
 
 # Détection de l'OS
 ifeq ($(OS),Windows_NT)
