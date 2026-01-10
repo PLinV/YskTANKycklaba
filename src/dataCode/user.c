@@ -146,6 +146,7 @@ User* getOrCreateUser(const char* getUsername) {
               userFound->maxScore = maxScore;
               userFound->gamePlayed = gamePlayed;
               userFound->kill = kill;
+              userFound->death = death;
               
 
             } else {

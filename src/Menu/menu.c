@@ -1,7 +1,6 @@
 #include "menu.h"
 #include "../Game/Game.h"
 #include "../Graphisme/graphisme.h"
-#include "../Stat/stat.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,19 +1,19 @@
   #include "raylib.h"
-  //gcc \
-    YskTANKycklaba/src/statPage/statPage.c \
-    YskTANKycklaba/src/statPage/input_box.c \
-    YskTANKycklaba/src/dataCode/user.c \
+  //gcc src/statPage/statPage.c \
+    src/statPage/input_box.c \
+    src/dataCode/user.c \
     -o hello \
     -Iraylib/src \
     raylib/src/libraylib.a \
     -lm -lpthread -ldl -lrt -lX11 -lGL
+    
   // Pour lancer le test
   #include "statPage.h"
   #include "input_box.h"
   #include <string.h>
   #include "../dataCode/user.h"
 
-  bool DrawButton(Rectangle *bounds, const char *text, int font_size) {
+  static bool DrawButton(Rectangle *bounds, const char *text, int font_size) {
     Font font = GetFontDefault();
 
     // padding horizontal et vertical
@@ -153,10 +153,4 @@
 
     CloseWindow();
     return 0;
-  }
-
-
-
-  int main() {
-    RunStats();
   }
