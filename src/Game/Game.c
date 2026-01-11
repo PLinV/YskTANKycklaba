@@ -6,22 +6,22 @@
 #include <raylib.h>
 #include "Game.h"
 
-void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map)
+void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map, int W, int H, bool *exitGame)
 {
     // input and logic
-    movePlayers(p, playerCount, map);
+    movePlayers(p, playerCount, map, W, H);
     actions(p, playerCount, pr);
-    updateProjectiles(pr, p, playerCount, map);
-    powerUps(pu, map, p, playerCount, pr);
+    updateProjectiles(pr, p, playerCount, map, W, H, exitGame);
+    powerUps(pu, map, p, playerCount, pr, W, H);
 
     // render
-    drawEveryTile(dU, map);
+    drawEveryTile(dU, map, W, H);
     drawPlayers(dU, p, playerCount);
     drawPowerUp(dU, *pu);
     drawProjectiles(dU, pr);
 }
 
-int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map, bool isProjectile)
+int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map, bool isProjectile, int W, int H)
 {
     // check collisions in horizontal or vertical
     // player x/y in tile unit
@@ -36,15 +36,15 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
     {
         for (int i = 0; i < W; i++)
         {
-            char c = map[(j * W + i) * 2];
-            if (c == '1' || c == '2')
+            char c = map[j * W + i];
+            if (c == 1 || c == 2)
             {
                 Rectangle tile = {(float)i, (float)j, 1.0f, 1.0f};
                 if (CheckCollisionRecs(newPos, tile))
                 {
-                    if (c == '2' && isProjectile)
+                    if (c == 2 && isProjectile)
                     {
-                        map[(j * W + i) * 2] = '0'; // projectiles destroy '2' tiles
+                        map[j * W + i] = 0; // projectiles destroy '2' tiles
                     }
                     return 1;
                 }
@@ -54,7 +54,7 @@ int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, ch
     return 0;
 }
 
-void movePlayers(player *players, int pC, char *map)
+void movePlayers(player *players, int pC, char *map, int W, int H)
 {
     const float DEADZONE = 0.0f;
 
@@ -63,6 +63,11 @@ void movePlayers(player *players, int pC, char *map)
         player *p = &players[i];
         float x_velocity = 0.0f;
         float y_velocity = 0.0f;
+        if (p->respawnTimer > 0)
+        {
+            p->respawnTimer -= 1;
+            continue;
+        }
 
         if (p->move.usesController && p->move.controllerIndex >= 0)
         {
@@ -131,31 +136,46 @@ void movePlayers(player *players, int pC, char *map)
 
         Rectangle PlayerHitbox = {p->posX - p->size / 2.0f, p->posY - p->size / 2.0f, p->size, p->size};
 
-        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map, false))
+        if (!IsThereAnObstacle(PlayerHitbox, x_velocity, true, map, false, W, H))
             p->posX += x_velocity;
-        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, false))
+        if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, false, W, H))
             p->posY += y_velocity;
     }
 }
 
-void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, int pC)
+void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, int pC, char *map, int W, int H, bool *exitGame)
 {
     for (int j = 0; j < pC; j++)
     {
         if (p[j].playerId == proj->playerId)
             continue; // skip its own player
-
+        if (p[j].respawnTimer > 0)
+            continue; // skip when respawing
         player *pla = &p[j];
         Rectangle PlayerHitbox = {pla->posX - pla->size / 2.0f, pla->posY - pla->size / 2.0f, pla->size, pla->size};
         if (CheckCollisionRecs(ProjHitbox, PlayerHitbox))
         {
             // basically kills the player
-            pla->posX = 1000000.0f;
+            if (pla->livesLeft <= 0)
+            {
+                pla->posX = 1000000.0f;
+            }
+            else
+            {
+                int randomStartCoord[2] = {0, 0};
+                randomCoordsWithDistance(randomStartCoord, p, map, pC, (int)H / 2, W, H);
+                pla->posX = randomStartCoord[0] + 0.5;
+                pla->posY = randomStartCoord[1] + 0.5;
+                pla->livesLeft -= 1;
+                pla->respawnTimer = 60 * 2;
+
+                checkWin(exitGame, p, pC);
+            }
         }
     }
 }
 
-void updateProjectiles(projectileList *pr, player *p, int pC, char *map)
+void updateProjectiles(projectileList *pr, player *p, int pC, char *map, int W, int H, bool *exitGame)
 {
     for (int i = pr->size - 1; i >= 0; i--)
     {
@@ -163,10 +183,10 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map)
         Rectangle ProjHitbox = {proj->posX - proj->size / 2.0f, proj->posY - proj->size / 2.0f, proj->size, proj->size};
 
         // check player collisions
-        checkPlayersGettingHit(proj, ProjHitbox, p, pC);
+        checkPlayersGettingHit(proj, ProjHitbox, p, pC, map, W, H, exitGame);
 
         // horizontal movement and collisions
-        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, true))
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, true, W, H))
         {
             proj->posX += proj->speedX;
         }
@@ -185,7 +205,7 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map)
         }
 
         // vertical movement and collisions
-        if (!IsThereAnObstacle(ProjHitbox, proj->speedY, false, map, true))
+        if (!IsThereAnObstacle(ProjHitbox, proj->speedY, false, map, true, W, H))
         {
             proj->posY += proj->speedY;
         }
@@ -344,13 +364,13 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
             spawnBullet(*p, pr, i * 7.5f, size, 1, 0.1f);
         }
         break;
-    case 5: // life (TODO)
-        // implement life logic if you have a life field
+    case 5: // life
+        p->livesLeft += 1;
         break;
     }
 }
 
-void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanceMinToPlayer)
+void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanceMinToPlayer, int W, int H)
 {
     int tries = 0;
     int randomX;
@@ -362,7 +382,7 @@ void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanc
         randomY = rand() % H;
         Rectangle hitbox = {(float)randomX, (float)randomY, 2.0f, 2.0f};
 
-        if (!IsThereAnObstacle(hitbox, 0.0f, false, map, false))
+        if (!IsThereAnObstacle(hitbox, 0.0f, false, map, false, W, H))
         {
             bool farEnough = false;
             for (int i = 0; i < pC; i++)
@@ -393,14 +413,14 @@ void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanc
     // printf("spawns : %d %d , tries:%d\n", randomX, randomY, tries);
 }
 
-void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr)
+void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr, int W, int H)
 {
     if (pu->timer <= 0)
     { // spawns power up
         if (!pu->hasSpawnYet)
         {
             int XY[2] = {-1, 0};
-            randomCoordsWithDistance(&XY, p, map, pC, 10);
+            randomCoordsWithDistance(XY, p, map, pC, 10, W, H); // may cause bug &XY
             pu->index = rand() % 6;
             pu->posX = (float)XY[0];
             pu->posY = (float)XY[1];
@@ -443,49 +463,114 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr)
             pla->powerUp.timer -= 1;
     }
 }
-
-
-
-int StartGame()
+void checkWin(bool *exitGame, player *p, int playerCount)
 {
-    const int playersCount = 4;
+    int count = 0;
+    for (int i = 0; i < playerCount; i++)
+    {
+        player pla = p[i];
+        if (pla.livesLeft <= 0)
+        {
+            count++;
+        }
+    }
+    if (count >= playerCount - 1)
+    {
+        *exitGame = true;
+    }
+}
 
+void RunGame(char *mapPath, int playersCount)
+{
+    SetWindowTitle("YskTANKycklaba - Game");
 
-    powerUpPlayer pupl = {0, false, false};
+    // Default map if none provided
+    if (mapPath == NULL || strlen(mapPath) == 0)
+    {
+        mapPath = "./src/Graphisme/Maps/default.txt";
+    }
+    // 1. Load Map Data
+    char *text = LoadFileText(mapPath);
+    if (!text)
+    {
+        TraceLog(LOG_ERROR, "Failed to load map: %s", mapPath);
+        return;
+    }
+    int width = 0, height = 0;
+    int nbSpawnP1 = 0, nbSpawnP2 = 0;
+    // Read dimensions and spawn counts from first line
+    // Format: Width,Height,NbSpawnP1,NbSpawnP2
+    char *line = strtok(text, "\n");
+    int args =
+        sscanf(line, "%d,%d,%d,%d", &width, &height, &nbSpawnP1, &nbSpawnP2);
+    if (args < 2)
+    {
+        TraceLog(LOG_ERROR, "Invalid map format: %s", mapPath);
+        UnloadFileText(text);
+        return;
+    }
+    printf("%s\n", text);
+    // Parse collision map and collect spawns
+    char *cleanMap = (char *)calloc(width * height, sizeof(char));
+
+    // Temporary storage for spawn points
+    // Vector2 *spawnsP1 = (Vector2 *)malloc(sizeof(Vector2) * (width * height));
+    // Vector2 *spawnsP2 = (Vector2 *)malloc(sizeof(Vector2) * (width * height));
+    // int countP1 = 0;
+    // int countP2 = 0;
+
+    int index = 0;
+    char *token = strtok(NULL, ",\n\r");
+    while (token != NULL && index < width * height)
+    {
+        int val = atoi(token);
+        cleanMap[index] = val;
+
+        // Collect Spawns
+        // if (val == 2)
+        // { // Spawn P1
+        //     spawnsP1[countP1++] =
+        //         (Vector2){(float)(index % width), (float)(index / width)};
+        // }
+        // else if (val == 3)
+        // { // Spawn P2
+        //     spawnsP2[countP2++] =
+        //         (Vector2){(float)(index % width), (float)(index / width)};
+        // }
+
+        index++;
+        token = strtok(NULL, ",\n\r");
+    }
+    UnloadFileText(text);
+
+    // 2. Load Map Image
+    char imagePath[256];
+    strncpy(imagePath, mapPath, 255);
+    char *dot = strrchr(imagePath, '.');
+    if (dot)
+        strcpy(dot, ".png");
+    else
+        strcat(imagePath, ".png");
+
+    Texture2D bgTexture = LoadTexture(imagePath);
+
+    if (bgTexture.id == 0)
+    {
+        TraceLog(LOG_WARNING, "Failed to load map image: %s. Using fallback.",
+                 imagePath);
+    }
+
+    // 3. Init Players & Projectiles
+
+    powerUpPlayer pupl = {-1, false, false};
 
     // allocate players
     player *p = (player *)malloc(sizeof(player) * playersCount);
     if (!p)
     {
         printf("malloc failed\n");
-        return 1;
+        return;
     }
-
-    // projectile list
-    projectile *ptr = (projectile *)malloc(sizeof(projectile) * 8);
-    if (!ptr)
-    {
-        printf("malloc failed\n");
-        free(p);
-        return 1;
-    }
-    projectileList prList = {0, ptr, 8};
-
-    powerUp pu = {120, 0.0f, 100000.0f, false, 0};
-
-    // load map
-    const char *nom = "./YskTANKycklaba/src/Graphisme/Maps/default.txt";
-    char *txt = LoadFileText(nom);
-    if (!txt)
-    {
-        printf("Failed to load map file '%s'\n", nom);
-        free(p);
-        free(ptr);
-        return 1;
-    }
-
-    srand(time(NULL)); // makes random random either way random isn't random which is a problem when you want randomness
-
     // detecting gamepads
     int detectedPadIndices[4];
     int padCount = 0;
@@ -511,15 +596,17 @@ int StartGame()
     for (int i = 0; i < playersCount; i++)
     {
         p[i] = (player){
-            .posX = (float)((i + 1) * 2),
-            .posY = 2.0f,
+            .posX = 0.0f,
+            .posY = 0.0f,
             .size = 0.8f,
             .speed = 0.1f,
             .aimOrientation = 0.0f,
             .playerId = i,
             .shootTimer = 0,
             .powerUp = pupl,
-            .move = moves[i]};
+            .move = moves[i],
+            .livesLeft = 3,
+            .respawnTimer = 2 * 60};
 
         if (padAssignCursor < padCount)
         {
@@ -531,140 +618,11 @@ int StartGame()
             p[i].move.usesController = false;
             p[i].move.controllerIndex = -1;
         }
+        int randomStartCoord[2] = {0, 0};
+        randomCoordsWithDistance(randomStartCoord, &p[i], cleanMap, playersCount, (int)height / 3, width, height);
+        p[i].posX = randomStartCoord[0] + 0.5;
+        p[i].posY = randomStartCoord[1] + 0.5;
     }
-
-    // main loop
-    while (1)
-    {
-        BeginDrawing();
-        //---------------recompute dynamic dU when window resizes
-        float dUX = GetScreenWidth() / (float)W;
-        float dUY = GetScreenHeight() / (float)H;
-        float dU = dUX < dUY ? dUX : dUY;
-        //---------------
-        mainLoop(p, playersCount, &prList, &pu, dU, txt);
-        EndDrawing();
-    }
-
-    // free memory and no segfaults
-    free(txt);
-    free(p);
-    free(ptr);
-    CloseWindow();
-    return 0;
-}
-
-
-
-void RunGame(char *mapPath)
-{
-    // SetWindowTitle("YskTANKycklaba - Game");
-
-    // Default map if none provided
-    if (mapPath == NULL || strlen(mapPath) == 0)
-    {
-        mapPath = "./YskTANKycklaba/src/Graphisme/Maps/default.txt";
-    }
-    const char *nom = "./YskTANKycklaba/src/Graphisme/Maps/default.txt";
-    char *text = LoadFileText(nom);
-    // 1. Load Map Data
-    // char *text = LoadFileText(mapPath);
-    if (!text)
-    {
-        TraceLog(LOG_ERROR, "Failed to load map: %s", mapPath);
-        return;
-    }
-    int width = 0, height = 0;
-    int nbSpawnP1 = 0, nbSpawnP2 = 0;
-
-    // Read dimensions and spawn counts from first line
-    // Format: Width,Height,NbSpawnP1,NbSpawnP2
-    char *line = strtok(text, "\n");
-    int args =
-        sscanf(line, "%d,%d,%d,%d", &width, &height, &nbSpawnP1, &nbSpawnP2);
-    if (args < 2)
-    {
-        TraceLog(LOG_ERROR, "Invalid map format: %s", mapPath);
-        UnloadFileText(text);
-        return;
-    }
-    // Parse collision map and collect spawns
-    char *cleanMap = (char *)calloc(width * height, sizeof(char));
-
-    // Temporary storage for spawn points
-    Vector2 *spawnsP1 = (Vector2 *)malloc(sizeof(Vector2) * (width * height));
-    Vector2 *spawnsP2 = (Vector2 *)malloc(sizeof(Vector2) * (width * height));
-    int countP1 = 0;
-    int countP2 = 0;
-
-    int index = 0;
-    char *token = strtok(NULL, ",\n\r");
-    while (token != NULL && index < width * height)
-    {
-        int val = atoi(token);
-        cleanMap[index] = val;
-
-        // Collect Spawns
-        if (val == 2)
-        { // Spawn P1
-            spawnsP1[countP1++] =
-                (Vector2){(float)(index % width), (float)(index / width)};
-        }
-        else if (val == 3)
-        { // Spawn P2
-            spawnsP2[countP2++] =
-                (Vector2){(float)(index % width), (float)(index / width)};
-        }
-
-        index++;
-        token = strtok(NULL, ",\n\r");
-    }
-    UnloadFileText(text);
-
-    // 2. Load Map Image
-    char imagePath[256];
-    strncpy(imagePath, mapPath, 255);
-    char *dot = strrchr(imagePath, '.');
-    if (dot)
-        strcpy(dot, ".png");
-    else
-        strcat(imagePath, ".png");
-
-    // Texture2D bgTexture = LoadTexture(imagePath);
-
-    // if (bgTexture.id == 0)
-    // {
-    //     TraceLog(LOG_WARNING, "Failed to load map image: %s. Using fallback.",
-    //              imagePath);
-    // }
-
-    // 3. Init Players & Projectiles
-    // Randomize Spawns if available
-    float p1x = 1.5f, p1y = 1.5f;                  // Default
-    float p2x = width - 2.5f, p2y = height - 2.5f; // Default
-
-    if (countP1 > 0)
-    {
-        int r = GetRandomValue(0, countP1 - 1);
-        p1x = spawnsP1[r].x + 0.5f; // Center in tile
-        p1y = spawnsP1[r].y + 0.5f;
-    }
-    if (countP2 > 0)
-    {
-        int r = GetRandomValue(0, countP2 - 1);
-        p2x = spawnsP2[r].x + 0.5f;
-        p2y = spawnsP2[r].y + 0.5f;
-    }
-
-    // Free spawn lists
-    free(spawnsP1);
-    free(spawnsP2);
-
-    // Player size set to 0.7 (70% of tile)
-    player p1 = {p1x, p1y, 0.7f, 0.1f, 10};
-    player p2 = {p2x, p2y, 0.7f, 0.3f, 10};
-    player p[2] = {p1, p2};
-
     powerUp pu = {120, 0.0f, 100000.0f, false, 0};
 
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8));
@@ -685,15 +643,25 @@ void RunGame(char *mapPath)
         float dUY = GetScreenHeight() / (float)height;
         float dU = dUX < dUY ? dUX : dUY;
 
-        mainLoop(p, 4, &prList, &pu, dU, cleanMap);
+        // printf("%d, %d\n",width,height);
+        mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, width, height, &exitGame);
 
         DrawText("Press BACKSPACE to return to Menu", 10, 10, 20, DARKGRAY);
         EndDrawing();
     }
 
-    // Cleanup
-    free(ptr);
+    if (prList.data != NULL)
+    {
+        free(prList.data);
+    }
+
     free(cleanMap);
-    // if (bgTexture.id != 0)
-    //     UnloadTexture(bgTexture);
+
+    if (p != NULL)
+    {
+        free(p);
+    }
+
+    if (bgTexture.id != 0)
+        UnloadTexture(bgTexture);
 }

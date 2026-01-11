@@ -36,6 +36,8 @@ typedef struct player
     int shootTimer;
     powerUpPlayer powerUp;
     movement move;
+    int livesLeft;
+    int respawnTimer;
 
 } player;
 
@@ -49,7 +51,7 @@ typedef struct projectile
     float Orientation; // angle in degrees
     float size;        // in tile unit
     int bounceLeft;
-    
+
 } projectile;
 
 typedef struct projectileList
@@ -69,11 +71,11 @@ typedef struct powerUp // the physical object
     int index; // (0-5) depending on what effect
 } powerUp;
 
-#define W 50 // tile map, number of tiles
-#define H 32
+// #define W 80 // tile map, number of tiles
+// #define H 32
 
-float tileMap(float dU, char *map);
-void drawEveryTile(float dU, char *map);
+float tileMap(float dU, char *map, int W, int H);
+void drawEveryTile(float dU, char *map, int W, int H);
 void drawPlayers(float dU, player *p, int playerCount);
 void drawProjectiles(float dU, projectileList *pr);
 void drawPowerUp(float dU, powerUp pu);
