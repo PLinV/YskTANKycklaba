@@ -14,3 +14,4 @@ void drawEveryTile(float dU, char *map);
 void drawPlayers(float dU, player *p, int playerCount);
 void drawProjectiles(float dU, projectileList *pr);
 void drawPowerUp(float dU, powerUp pu);
+void RunGame(char *mapPath);
