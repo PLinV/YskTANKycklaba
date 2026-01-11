@@ -86,9 +86,25 @@ int main() {
   SetTargetFPS(60);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
 
+  Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
+  // TEST POUR VOIR SI L'IMAGE CHARGE BIEN
+  if (background.id == 0) { 
+    printf("Failed to load background image.\n");
+  }
+
+  // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
+
+    DrawTexturePro(
+      background, 
+      (Rectangle){ 0, 0, (float)background.width, (float)background.height }, // Source (toute l'image)
+      (Rectangle){ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() }, // Destination (tout l'écran)
+      (Vector2){ 0, 0 }, 
+      0.0f, 
+      WHITE // Teinte (WHITE = couleur originale)
+    );
 
     int centerX = GetScreenWidth() / 2 - 100;
     int startY = GetScreenHeight() / 2 - 100;
@@ -134,6 +150,9 @@ int main() {
 
     EndDrawing();
   }
+
+  // --- 3. DÉCHARGEMENT DE LA MÉMOIRE ---
+  UnloadTexture(background);
 
   CloseWindow();
   return 0;
