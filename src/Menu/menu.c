@@ -32,6 +32,33 @@ bool DrawButton(Rectangle bounds, const char *text) {
   return pressed;
 }
 
+// --- NOUVELLE FONCTION POUR LE BOUTON IMAGE ---
+bool DrawImageButton(Rectangle bounds, Texture2D texture) {
+    bool pressed = false;
+    Vector2 mousePoint = GetMousePosition();
+    bool isHover = CheckCollisionPointRec(mousePoint, bounds);
+    
+    // Changement de teinte au survol pour donner un effet visuel
+    // WHITE = couleur normale, LIGHTGRAY = un peu plus sombre quand on passe la souris
+    Color tint = isHover ? LIGHTGRAY : WHITE; 
+
+    if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        pressed = true;
+    }
+
+    // On dessine l'image en l'étirant pour qu'elle remplisse le rectangle "bounds"
+    DrawTexturePro(
+        texture,
+        (Rectangle){0, 0, (float)texture.width, (float)texture.height}, // Source (toute l'image)
+        bounds, // Destination (taille du bouton définie dans le main)
+        (Vector2){0, 0},
+        0.0f,
+        tint
+    );
+
+    return pressed;
+}
+
 void SelectMap(char *selectedMapPath) {
   FilePathList files = LoadDirectoryFiles("src/Graphisme/Maps");
   int selectedIndex = -1;
@@ -92,6 +119,11 @@ int main() {
     printf("Failed to load background image.\n");
   }
 
+  Texture2D btnPlayImg = LoadTexture("src/Menu/images/bouton_jouer.jpg");
+  if (btnPlayImg.id == 0) { 
+    printf("Failed to load image bouton jouer.\n");
+  }
+
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -112,11 +144,9 @@ int main() {
     int buttonHeight = 50;
     int spacing = 20;
 
-    DrawText("YskTANKycklaba", centerX - 50, startY - 60, 40, DARKGRAY);
 
     // 1. Jouer
-    if (DrawButton((Rectangle){centerX, startY, buttonWidth, buttonHeight},
-                   "JOUER")) {
+    if (DrawImageButton((Rectangle){centerX, startY, buttonWidth, buttonHeight}, btnPlayImg)) {
       char mapPath[512] = {0};
       SelectMap(mapPath);
       if (mapPath[0] != '\0') {
