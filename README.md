@@ -1,5 +1,8 @@
 # YskTANKycklaba
 Jeu Projet C avec bibliothéque Raylib
+
+Bonjour mr De-Jonckere voici bienvenu sur notre magnifique jeu créer a l'aide de raylib.
+
 On pourra clone le jeu en utilisant la commande suivante : 
 
 ```sh
