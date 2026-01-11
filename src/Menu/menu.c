@@ -150,7 +150,7 @@ int main() {
       char mapPath[512] = {0};
       SelectMap(mapPath);
       if (mapPath[0] != '\0') {
-        RunGame(mapPath);
+        RunGame(mapPath, 4); //4 is the player count, you can set it between (1-4)
         SetWindowTitle("YskTANKycklaba - Menu");
       }
     }
