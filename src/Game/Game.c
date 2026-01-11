@@ -482,8 +482,10 @@ void checkWin(bool *exitGame, player *p, int playerCount)
 
 void RunGame(char *mapPath, int playersCount)
 {
+
     SetWindowTitle("YskTANKycklaba - Game");
 
+    srand(time(NULL)); // makes random random either way random isn't random which is a problem when you want randomness
     // Default map if none provided
     if (mapPath == NULL || strlen(mapPath) == 0)
     {
