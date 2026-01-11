@@ -71,11 +71,8 @@ typedef struct powerUp // the physical object
     int index; // (0-5) depending on what effect
 } powerUp;
 
-// #define W 80 // tile map, number of tiles
-// #define H 32
 
-float tileMap(float dU, char *map, int W, int H);
-void drawEveryTile(float dU, char *map, int W, int H);
-void drawPlayers(float dU, player *p, int playerCount);
+float tileMap(float dU, char *map, int W, int H, Texture2D *textureArray);
+void drawPlayers(float dU, player *p, int playerCount, Texture2D *textureArray);
 void drawProjectiles(float dU, projectileList *pr);
 void drawPowerUp(float dU, powerUp pu);

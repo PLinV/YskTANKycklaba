@@ -4,8 +4,11 @@
 
 #include "render.h"
 
-float tileMap(float dU, char *map, int W, int H)
+float tileMap(float dU, char *map, int W, int H, Texture2D *textureArray)
 {
+    Texture2D ground = textureArray[0];
+    Texture2D wall = textureArray[1];
+    Texture2D box = textureArray[2];
 
     ClearBackground(RAYWHITE);
 
@@ -15,45 +18,80 @@ float tileMap(float dU, char *map, int W, int H)
         {
             if (map[j * W + i] == 1)
             {
-                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){100, 150, 100, 255});
+                DrawTexturePro(
+                    wall,
+                    (Rectangle){0, 0, (float)wall.width, (float)wall.height},
+                    (Rectangle){(int)(dU * i), (int)(dU * j), dU + 1, dU + 1},
+                    (Vector2){0, 0},
+                    0.0f,
+                    WHITE);
             }
             else if (map[j * W + i] == 2)
             {
-                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){255, 100, 100, 255});
+                DrawTexturePro(
+                    box,
+                    (Rectangle){0, 0, (float)box.width, (float)box.height},
+                    (Rectangle){(int)(dU * i), (int)(dU * j), dU + 1, dU + 1},
+                    (Vector2){0, 0},
+                    0.0f,
+                    WHITE);
             }
             else if (map[j * W + i] == 0)
             {
-                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){200, 200, 200, 255});
+
+                DrawTexturePro(
+                    ground,
+                    (Rectangle){0, 0, (float)ground.width, (float)ground.height},
+                    (Rectangle){(int)(dU * i), (int)(dU * j), dU + 1, dU + 1},
+                    (Vector2){0, 0},
+                    0.0f,
+                    WHITE);
             }
             else
             {
                 // default color for error
-                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){150, 150, 200, 255});
+                DrawRectangle((int)(dU * i), (int)(dU * j), dU + 1, dU + 1, (Color){255, 0, 0, 255});
             }
         }
     }
 }
-
-void drawEveryTile(float dU, char *map, int W, int H)
+void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureArray)
 {
-    tileMap(dU, map, W, H);
+    Texture2D bodyTex = textureArray[3];
+    Texture2D canonTex = textureArray[4];
+    Color playerColors[4] = {YELLOW, LIGHTGRAY, SKYBLUE, GREEN};
 
-    // un obstacle
-    DrawRectangle(60 * dU, 60 * dU, 30 * dU, 40 * dU, RED);
-}
-
-void drawPlayers(float dU, player *players, int playerCount)
-{
     for (int i = 0; i < playerCount; i++)
     {
         player *p = &players[i];
-        Vector2 pos = {(p->posX - p->size / 2), (p->posY - p->size / 2)};
+
+        Vector2 tankCenterPixels = {(p->posX) * dU, p->posY * dU};
+
+        float bodyDrawSize = p->size * dU * 1.2f;
+
+        float canonWidth = bodyDrawSize * (p->powerUp.sniper ? 2.5f : 1.8f);
+        float canonHeight = bodyDrawSize * 1.0f;
 
         // body
-        DrawRectangle(pos.x * dU, pos.y * dU, p->size * dU, p->size * dU, (Color){i * 60, i * 100, i * 60, 255 * (120 - p->respawnTimer) / 120});
+        DrawTexturePro(
+            bodyTex,
+            (Rectangle){0, 0, (float)bodyTex.width, (float)bodyTex.height},
+            (Rectangle){tankCenterPixels.x - 0.2 * dU, tankCenterPixels.y, bodyDrawSize + 0.4 * dU, bodyDrawSize},
+            (Vector2){bodyDrawSize / 2, bodyDrawSize / 2},
+            0.0f,
+            playerColors[i]);
+
         // canon
-        float canon_size = p->powerUp.sniper ? 1.5 : 1.0;
-        DrawRectanglePro((Rectangle){(pos.x + p->size / 2) * dU, (pos.y + p->size / 2) * dU, canon_size * dU, 0.1 * dU}, (Vector2){0, 0}, p->aimOrientation, (Color){0, 200, 100, 255 * (120 - p->respawnTimer) / 120});
+
+        DrawTexturePro(
+            canonTex,
+            (Rectangle){0, 0, (float)canonTex.width, (float)canonTex.height},
+            (Rectangle){tankCenterPixels.x, tankCenterPixels.y, canonWidth, canonHeight},
+            (Vector2){canonWidth / 2 + 0.5 * dU, canonHeight / 2},
+            p->aimOrientation + 180,
+            playerColors[i]);
+
+        DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2, tankCenterPixels.y - bodyDrawSize / 2 - 10, bodyDrawSize * (p->livesLeft / 3.0f), 5, RED);
     }
 }
 

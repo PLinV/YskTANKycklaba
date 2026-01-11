@@ -6,7 +6,7 @@
 #include <raylib.h>
 #include "Game.h"
 
-void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map, int W, int H, bool *exitGame)
+void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map, int W, int H, bool *exitGame, Texture2D *textureArray)
 {
     // input and logic
     movePlayers(p, playerCount, map, W, H);
@@ -15,8 +15,8 @@ void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float
     powerUps(pu, map, p, playerCount, pr, W, H);
 
     // render
-    drawEveryTile(dU, map, W, H);
-    drawPlayers(dU, p, playerCount);
+    tileMap(dU, map, W, H, textureArray);
+    drawPlayers(dU, p, playerCount, textureArray);
     drawPowerUp(dU, *pu);
     drawProjectiles(dU, pr);
 }
@@ -156,9 +156,11 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, i
         if (CheckCollisionRecs(ProjHitbox, PlayerHitbox))
         {
             // basically kills the player
-            if (pla->livesLeft <= 0)
+            if (pla->livesLeft <= 1)
             {
+                pla->livesLeft -= 1;
                 pla->posX = 1000000.0f;
+                checkWin(exitGame, p, pC);
             }
             else
             {
@@ -168,8 +170,6 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, i
                 pla->posY = randomStartCoord[1] + 0.5;
                 pla->livesLeft -= 1;
                 pla->respawnTimer = 60 * 2;
-
-                checkWin(exitGame, p, pC);
             }
         }
     }
@@ -555,6 +555,12 @@ void RunGame(char *mapPath, int playersCount)
         strcat(imagePath, ".png");
 
     Texture2D bgTexture = LoadTexture(imagePath);
+    Texture2D a = LoadTexture("src/Graphisme/assets/ground4.jpg");
+    Texture2D b = LoadTexture("src/Graphisme/assets/wall3.jpg");
+    Texture2D c = LoadTexture("src/Graphisme/assets/box2.jpg");
+    Texture2D d = LoadTexture("src/Graphisme/assets/tank1.png");
+    Texture2D e = LoadTexture("src/Graphisme/assets/tank2.png");
+    Texture2D textureArray[5] = {a, b, c, d, e};
 
     if (bgTexture.id == 0)
     {
@@ -646,7 +652,7 @@ void RunGame(char *mapPath, int playersCount)
         float dU = dUX < dUY ? dUX : dUY;
 
         // printf("%d, %d\n",width,height);
-        mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, width, height, &exitGame);
+        mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, width, height, &exitGame, &textureArray);
 
         DrawText("Press BACKSPACE to return to Menu", 10, 10, 20, DARKGRAY);
         EndDrawing();
