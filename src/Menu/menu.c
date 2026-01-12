@@ -124,6 +124,21 @@ int main() {
     printf("Failed to load image bouton jouer.\n");
   }
 
+  Texture2D btnLeaveImg = LoadTexture("src/Menu/images/bouton_quitter.jpg");
+  if (btnLeaveImg.id == 0) { 
+    printf("Failed to load image bouton quitter.\n");
+  }
+
+  Texture2D btnEditorImg = LoadTexture("src/Menu/images/bouton_editionmap.jpg");
+  if (btnEditorImg.id == 0) { 
+    printf("Failed to load image bouton edition map.\n");
+  }
+
+  Texture2D btnStatsImg = LoadTexture("src/Menu/images/bouton_stats.jpg");
+  if (btnStatsImg.id == 0) { 
+    printf("Failed to load image bouton stats.\n");
+  }
+
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -156,25 +171,23 @@ int main() {
     }
 
     // 2. Statistiques
-    if (DrawButton((Rectangle){centerX, startY + buttonHeight + spacing,
+    if (DrawImageButton((Rectangle){centerX, startY + buttonHeight + spacing,
                                buttonWidth, buttonHeight},
-                   "STATISTIQUES")) {
+                   btnStatsImg)) {
       RunStats();
       SetWindowTitle("YskTANKycklaba - Menu");
     }
 
     // 3. Map Editor
-    if (DrawButton((Rectangle){centerX, startY + 2 * (buttonHeight + spacing),
+    if (DrawImageButton((Rectangle){centerX, startY + 2 * (buttonHeight + spacing),
                                buttonWidth, buttonHeight},
-                   "MAP EDITOR")) {
+                   btnEditorImg)) {
       RunEditor();
       SetWindowTitle("YskTANKycklaba - Menu");
     }
 
     // 4. Quitter
-    if (DrawButton((Rectangle){centerX, startY + 3 * (buttonHeight + spacing),
-                               buttonWidth, buttonHeight},
-                   "QUITTER")) {
+    if (DrawImageButton((Rectangle){centerX, startY + 3 * (buttonHeight + spacing),buttonWidth, buttonHeight},btnLeaveImg)) {
       break;
     }
 
