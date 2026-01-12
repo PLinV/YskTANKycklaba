@@ -4,6 +4,29 @@
 
 #include "render.h"
 
+Texture2D *Loadtextures()
+{
+    Texture2D *textureArray = (Texture2D *)malloc(sizeof(Texture2D) * 12);
+
+    if (textureArray == NULL)
+    {
+        printf("ERROR LOADING TEXTURES");
+    }
+    textureArray[0] = LoadTexture("src/Graphisme/assets/ground4.jpg");
+    textureArray[1] = LoadTexture("src/Graphisme/assets/wall3.jpg");
+    textureArray[2] = LoadTexture("src/Graphisme/assets/box2.jpg");
+    textureArray[3] = LoadTexture("src/Graphisme/assets/tank1.png");
+    textureArray[4] = LoadTexture("src/Graphisme/assets/tank2.png");
+    textureArray[5] = LoadTexture("src/Graphisme/assets/bullet2.png");
+    textureArray[6] = LoadTexture("src/Graphisme/assets/speed.png");
+    textureArray[7] = LoadTexture("src/Graphisme/assets/sniper.png");
+    textureArray[8] = LoadTexture("src/Graphisme/assets/machinegun.png");
+    textureArray[9] = LoadTexture("src/Graphisme/assets/drone.png");
+    textureArray[10] = LoadTexture("src/Graphisme/assets/bomb.png");
+    textureArray[11] = LoadTexture("src/Graphisme/assets/life.png");
+    return textureArray;
+}
+
 float tileMap(float dU, char *map, int W, int H, Texture2D *textureArray)
 {
     Texture2D ground = textureArray[0];
@@ -55,11 +78,12 @@ float tileMap(float dU, char *map, int W, int H, Texture2D *textureArray)
         }
     }
 }
+Color playerColors[4] = {YELLOW, LIGHTGRAY, SKYBLUE, GREEN};
+
 void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureArray)
 {
     Texture2D bodyTex = textureArray[3];
     Texture2D canonTex = textureArray[4];
-    Color playerColors[4] = {YELLOW, LIGHTGRAY, SKYBLUE, GREEN};
 
     for (int i = 0; i < playerCount; i++)
     {
@@ -91,24 +115,46 @@ void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureA
             p->aimOrientation + 180,
             Fade(playerColors[i], 1 - (float)(p->respawnTimer) / 120));
 
+        // life bar
+        DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2, tankCenterPixels.y - bodyDrawSize / 2 - 10, bodyDrawSize, 5, WHITE);
         DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2, tankCenterPixels.y - bodyDrawSize / 2 - 10, bodyDrawSize * (p->livesLeft / 3.0f), 5, RED);
     }
 }
-
-void drawProjectiles(float dU, projectileList *pr)
+void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray)
 {
-    for (int i = 0; i < pr->size; i++) // iterating on each projectile
+    Texture2D bulletTex = textureArray[5];
+
+    for (int i = 0; i < pr->size; i++)
     {
         projectile proj = pr->data[i];
-        Rectangle projShape = {(proj.posX - proj.size / 2) * dU, (proj.posY - proj.size / 2) * dU, proj.size * dU, proj.size * dU};
-        Color c = {proj.playerId * 60, proj.playerId * 100, proj.playerId * 60, 255};
-        DrawRectangleRec(projShape, c);
+
+        Vector2 bulletCenter = {proj.posX * dU, proj.posY * dU};
+
+        float bWidth = proj.size * 1.5f * dU;
+        float bHeight = proj.size * 0.8f * dU;
+
+        DrawTexturePro(
+            bulletTex,
+            (Rectangle){0, 0, (float)bulletTex.width, (float)bulletTex.height},
+            (Rectangle){bulletCenter.x, bulletCenter.y, bWidth, bHeight},
+            (Vector2){bWidth / 2, bHeight / 2},
+            proj.Orientation + 180.0f,
+            WHITE);
+
+        // hitbox for debug
+        // DrawRectangleLinesEx((Rectangle){(proj.posX - proj.size/2)*dU, (proj.posY - proj.size/2)*dU, proj.size*dU, proj.size*dU}, 1, RED);
     }
 }
 
-void drawPowerUp(float dU, powerUp pu)
+void drawPowerUp(float dU, powerUp pu, Texture2D *textureArray)
 {
-    Color c = {pu.index * 40, pu.index * 20, 255 - 40 * pu.index, 255};
+    Texture2D bodyTex = textureArray[pu.index + 6];
     Rectangle puShape = {pu.posX * dU, pu.posY * dU, 2 * dU, 2 * dU};
-    DrawRectangleRec(puShape, c);
+    DrawTexturePro(
+        bodyTex,
+        (Rectangle){0, 0, (float)bodyTex.width, (float)bodyTex.height},
+        puShape,
+        (Vector2){0, 0},
+        0.0f,
+        WHITE);
 }

@@ -17,8 +17,8 @@ void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float
     // render
     tileMap(dU, map, W, H, textureArray);
     drawPlayers(dU, p, playerCount, textureArray);
-    drawPowerUp(dU, *pu);
-    drawProjectiles(dU, pr);
+    drawPowerUp(dU, *pu, textureArray);
+    drawProjectiles(dU, pr, textureArray);
 }
 
 int IsThereAnObstacle(Rectangle player, float velocity, bool checkHorizontal, char *map, bool isProjectile, int W, int H)
@@ -205,6 +205,7 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map, int W, 
             {
                 proj->speedX = -proj->speedX;
                 proj->bounceLeft -= 1;
+                proj->Orientation = atan2f(proj->speedY, proj->speedX) * (180.0f / PI);
             }
             else
             {
@@ -224,6 +225,7 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map, int W, 
             {
                 proj->speedY = -proj->speedY;
                 proj->bounceLeft -= 1;
+                proj->Orientation = atan2f(proj->speedY, proj->speedX) * (180.0f / PI);
             }
             else
             {
@@ -564,12 +566,8 @@ void RunGame(char *mapPath, int playersCount)
         strcat(imagePath, ".png");
 
     Texture2D bgTexture = LoadTexture(imagePath);
-    Texture2D a = LoadTexture("src/Graphisme/assets/ground4.jpg");
-    Texture2D b = LoadTexture("src/Graphisme/assets/wall3.jpg");
-    Texture2D c = LoadTexture("src/Graphisme/assets/box2.jpg");
-    Texture2D d = LoadTexture("src/Graphisme/assets/tank1.png");
-    Texture2D e = LoadTexture("src/Graphisme/assets/tank2.png");
-    Texture2D textureArray[5] = {a, b, c, d, e};
+
+    Texture2D *textureArray = Loadtextures();
 
     if (bgTexture.id == 0)
     {
@@ -644,7 +642,7 @@ void RunGame(char *mapPath, int playersCount)
     powerUp pu = {120, 0.0f, 100000.0f, false, 0};
 
     projectile *ptr = (projectile *)(malloc(sizeof(projectile) * 8));
-    projectileList prList = {0, ptr, 8};
+    projectileList prList = {0, ptr, 4};
 
     // 4. Game Loop
     bool exitGame = false;
@@ -662,7 +660,7 @@ void RunGame(char *mapPath, int playersCount)
         float dU = dUX < dUY ? dUX : dUY;
 
         // printf("%d, %d\n",width,height);
-        mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, width, height, &exitGame, &textureArray);
+        mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, width, height, &exitGame, textureArray);
 
         DrawText("Press BACKSPACE to return to Menu", 10, 10, 20, DARKGRAY);
         EndDrawing();
@@ -672,8 +670,12 @@ void RunGame(char *mapPath, int playersCount)
     {
         free(prList.data);
     }
-
+    for (int i = 0; i < 12; i++)
+    {
+        UnloadTexture(textureArray[i]);
+    }
     free(cleanMap);
+    free(textureArray);
 
     if (p != NULL)
     {
