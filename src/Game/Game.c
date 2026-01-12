@@ -140,6 +140,15 @@ void movePlayers(player *players, int pC, char *map, int W, int H)
             p->posX += x_velocity;
         if (!IsThereAnObstacle(PlayerHitbox, y_velocity, false, map, false, W, H))
             p->posY += y_velocity;
+
+        // for visual effects compute orientation
+
+        // only update orientation if there is movement
+        if (fabsf(x_velocity) > 0.001f || fabsf(y_velocity) > 0.001f)
+        {
+            float rad = atan2f(y_velocity, x_velocity);
+            p->lastRenderOrientation = rad * (180.0f / PI);
+        }
     }
 }
 
@@ -614,7 +623,8 @@ void RunGame(char *mapPath, int playersCount)
             .powerUp = pupl,
             .move = moves[i],
             .livesLeft = 3,
-            .respawnTimer = 2 * 60};
+            .respawnTimer = 2 * 60,
+            .lastRenderOrientation = 0};
 
         if (padAssignCursor < padCount)
         {

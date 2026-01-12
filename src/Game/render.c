@@ -69,7 +69,7 @@ void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureA
 
         float bodyDrawSize = p->size * dU * 1.2f;
 
-        float canonWidth = bodyDrawSize * (p->powerUp.sniper ? 2.5f : 1.8f);
+        float canonWidth = bodyDrawSize * (p->powerUp.sniper ? 3.0f : 1.8f);
         float canonHeight = bodyDrawSize * 1.0f;
 
         // body
@@ -77,9 +77,9 @@ void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureA
             bodyTex,
             (Rectangle){0, 0, (float)bodyTex.width, (float)bodyTex.height},
             (Rectangle){tankCenterPixels.x - 0.2 * dU, tankCenterPixels.y, bodyDrawSize + 0.4 * dU, bodyDrawSize},
-            (Vector2){bodyDrawSize / 2, bodyDrawSize / 2},
-            0.0f,
-            playerColors[i]);
+            (Vector2){bodyDrawSize / 2 + 0.2 * dU, bodyDrawSize / 2},
+            p->lastRenderOrientation,
+            Fade(playerColors[i], 1 - (float)(p->respawnTimer) / 120));
 
         // canon
 
@@ -89,7 +89,7 @@ void drawPlayers(float dU, player *players, int playerCount, Texture2D *textureA
             (Rectangle){tankCenterPixels.x, tankCenterPixels.y, canonWidth, canonHeight},
             (Vector2){canonWidth / 2 + 0.5 * dU, canonHeight / 2},
             p->aimOrientation + 180,
-            playerColors[i]);
+            Fade(playerColors[i], 1 - (float)(p->respawnTimer) / 120));
 
         DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2, tankCenterPixels.y - bodyDrawSize / 2 - 10, bodyDrawSize * (p->livesLeft / 3.0f), 5, RED);
     }

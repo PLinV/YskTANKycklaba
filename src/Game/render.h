@@ -38,6 +38,7 @@ typedef struct player
     movement move;
     int livesLeft;
     int respawnTimer;
+    float lastRenderOrientation;
 
 } player;
 
