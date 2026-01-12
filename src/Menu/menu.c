@@ -112,6 +112,18 @@ int main() {
   InitWindow(1000, 640, "YskTANKycklaba - Menu");
   SetTargetFPS(60);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
+  // 1. INITIALISER LE PÉRIPHÉRIQUE AUDIO
+  InitAudioDevice();
+  // 2. CHARGER LA MUSIQUE
+  // Formats supportés : .mp3, .ogg, .wav, .flac
+  Music music = LoadMusicStream("src/Menu/musique/tank-battle-13719.wav");
+  // Dans la boucle while, après BeginDrawing() :
+
+
+
+  // 3. LANCER LA LECTURE
+  PlayMusicStream(music);
+  SetMusicVolume(music, 0.5f);
 
   Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
   // TEST POUR VOIR SI L'IMAGE CHARGE BIEN
@@ -124,8 +136,25 @@ int main() {
     printf("Failed to load image bouton jouer.\n");
   }
 
+  Texture2D btnLeaveImg = LoadTexture("src/Menu/images/bouton_quitter.jpg");
+  if (btnLeaveImg.id == 0) { 
+    printf("Failed to load image bouton quitter.\n");
+  }
+
+  Texture2D btnEditorImg = LoadTexture("src/Menu/images/bouton_editionmap.jpg");
+  if (btnEditorImg.id == 0) { 
+    printf("Failed to load image bouton edition map.\n");
+  }
+
+  Texture2D btnStatsImg = LoadTexture("src/Menu/images/bouton_stats.jpg");
+  if (btnStatsImg.id == 0) { 
+    printf("Failed to load image bouton stats.\n");
+  }
+
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
+    UpdateMusicStream(music);
+
     BeginDrawing();
     ClearBackground(RAYWHITE);
 
@@ -144,7 +173,6 @@ int main() {
     int buttonHeight = 50;
     int spacing = 20;
 
-
     // 1. Jouer
     if (DrawImageButton((Rectangle){centerX, startY, buttonWidth, buttonHeight}, btnPlayImg)) {
       char mapPath[512] = {0};
@@ -156,25 +184,23 @@ int main() {
     }
 
     // 2. Statistiques
-    if (DrawButton((Rectangle){centerX, startY + buttonHeight + spacing,
+    if (DrawImageButton((Rectangle){centerX, startY + buttonHeight + spacing,
                                buttonWidth, buttonHeight},
-                   "STATISTIQUES")) {
+                   btnStatsImg)) {
       RunStats();
       SetWindowTitle("YskTANKycklaba - Menu");
     }
 
     // 3. Map Editor
-    if (DrawButton((Rectangle){centerX, startY + 2 * (buttonHeight + spacing),
+    if (DrawImageButton((Rectangle){centerX, startY + 2 * (buttonHeight + spacing),
                                buttonWidth, buttonHeight},
-                   "MAP EDITOR")) {
+                   btnEditorImg)) {
       RunEditor();
       SetWindowTitle("YskTANKycklaba - Menu");
     }
 
     // 4. Quitter
-    if (DrawButton((Rectangle){centerX, startY + 3 * (buttonHeight + spacing),
-                               buttonWidth, buttonHeight},
-                   "QUITTER")) {
+    if (DrawImageButton((Rectangle){centerX, startY + 3 * (buttonHeight + spacing),buttonWidth, buttonHeight},btnLeaveImg)) {
       break;
     }
 
@@ -183,7 +209,9 @@ int main() {
 
   // --- 3. DÉCHARGEMENT DE LA MÉMOIRE ---
   UnloadTexture(background);
-
+  UnloadTexture(btnPlayImg);
+  UnloadMusicStream(music); // Décharger la musique de la RAM
+  CloseAudioDevice();       // Fermer le périphérique audio
   CloseWindow();
   return 0;
 }
