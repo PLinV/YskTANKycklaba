@@ -1,0 +1,25 @@
+/usr/bin/ld: warning: src/Menu/GameSetup.o: missing .note.GNU-stack section implies executable stack
+/usr/bin/ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+/usr/bin/ld: src/Menu/menu.o:menu.c:(.text+0x2f): undefined reference to `__imp___acrt_iob_func'
+/usr/bin/ld: src/Menu/menu.o:menu.c:(.text+0x43): undefined reference to `__mingw_vfprintf'
+/usr/bin/ld: src/Menu/menu.o:menu.c:(.text+0x215): undefined reference to `__main'
+src/Menu/menu.o:menu.c:(.pdata+0x0): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x4): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x8): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0xc): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x10): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x14): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x18): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x1c): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/menu.o:menu.c:(.pdata+0x20): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x0): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x4): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x8): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0xc): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x10): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x14): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x18): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x1c): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+src/Menu/GameSetup.o:GameSetup.c:(.pdata+0x20): dangerous relocation: R_AMD64_IMAGEBASE with __ImageBase undefined
+collect2: error: ld returned 1 exit status
+make: *** [makefile:34: prog] Error 1

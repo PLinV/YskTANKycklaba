@@ -1,0 +1,7 @@
+gcc -o prog src/statPage/statPage.o src/statPage/input_box.o src/dataCode/user.o src/Menu/menu.o src/Menu/GameSetup.o src/Game/Game.o src/Game/render.o src/Graphisme/graphisme.o raylib/src/libraylib.a -lGL -lm -lpthread -ldl -lrt -lX11
+C:\Program Files\raylib\w64devkit\bin/ld.exe: cannot find -lGL: No such file or directory
+C:\Program Files\raylib\w64devkit\bin/ld.exe: cannot find -ldl: No such file or directory
+C:\Program Files\raylib\w64devkit\bin/ld.exe: cannot find -lrt: No such file or directory
+C:\Program Files\raylib\w64devkit\bin/ld.exe: cannot find -lX11: No such file or directory
+collect2.exe: error: ld returned 1 exit status
+make: *** [makefile:34: prog] Error 1
