@@ -10,8 +10,8 @@
   raylib/src/libraylib.a \
   -lm -lpthread -ldl -lrt -lX11 -lGL
 
-HistoricalGame* createHistoricalGame(const char* usernamePlayer1, const char* usernamePlayer2) {
-  if (strlen(usernamePlayer1) > 49 ||strlen(usernamePlayer2) > 49 ) {
+HistoricalGame* createHistoricalGame(const char* usernamePlayer1, const char* usernamePlayer2, const char* usernamePlayer3, const char* usernamePlayer4) {
+  if (strlen(usernamePlayer1) > 49 || strlen(usernamePlayer2) > 49|| strlen(usernamePlayer3) > 49 || strlen(usernamePlayer4) > 49) {
     printf("username trop long");
     return NULL;
   }
@@ -19,8 +19,12 @@ HistoricalGame* createHistoricalGame(const char* usernamePlayer1, const char* us
   HistoricalGame* game = malloc(sizeof(HistoricalGame));
   strcpy(game->username1, usernamePlayer1);  
   strcpy(game->username2, usernamePlayer2);
+  strcpy(game->username3, usernamePlayer3);  
+  strcpy(game->username4, usernamePlayer4); 
   game->score1 = 0;
   game->score2 = 0;
+  game->score3 = 0;
+  game->score4 = 0;
   game->winUsername = 0;  
 
   return game;
@@ -31,6 +35,10 @@ int incrementScore(HistoricalGame* game, int isPlayer, int value) {
     game->score1 += value;
   } else if (isPlayer == 2) {
     game->score2 += value;
+  } else if (isPlayer == 3) {
+    game->score3 += value;
+  } else if (isPlayer == 4) {
+    game->score4 += value;
   } else {
     printf("Game non trouvé");
     return EXIT_FAILURE;
@@ -39,8 +47,8 @@ int incrementScore(HistoricalGame* game, int isPlayer, int value) {
 }
 
 int whoWin(HistoricalGame* game, int winner) {
-  if (winner < 0 || winner > 2) {
-    printf("winner n'est pas entre 0 et 2");
+  if (winner < 0 || winner > 4) {
+    printf("winner n'est pas entre 0 et 4");
     return EXIT_FAILURE;
   } 
 
@@ -90,18 +98,17 @@ int saveGame(HistoricalGame* game) {
     return 0;
   }
 
-  fprintf(file, "%d;%s;%s;%d;%d;%d\n", newId, game->username1, game->username2, game->score1, game->score2, game->winUsername);
+  fprintf(file, "%d;%s;%s;%s;%s;%d;%d;%d;%d;%d\n", newId, game->username1, game->username2, game->username3, game->username4, game->score1, game->score2, game->score3, game->score4,game->winUsername);
   fclose(file);
 
   return 1;
 }
 
-/*
+
 int main(){
-  HistoricalGame* currentGame = createHistoricalGame("Paulin", "Hatem");
+  HistoricalGame* currentGame = createHistoricalGame("Paulin", "Hatem", "Alice", "Bob");
   incrementScore(currentGame, 1, 60);
   incrementScore(currentGame, 2, 70);
-  whoWin(currentGame, 2); 
+  whoWin(currentGame, 3); 
   saveGame(currentGame); 
 }
-*/

@@ -1,5 +1,5 @@
 username;maxScore;gamesPlayed;kill;death
-Alice;10;82;32;40
+Alice;10;85
 hatem;13;2;45;21
-Bob;120;28;4;3
+Bob;120;29
 goat;12;1;54;21

@@ -10,9 +10,13 @@
 typedef struct {
   char username1[50];   /** @brief Nom du premier joueur @warning <50 char */
   char username2[50];   /** @brief Nom du deuxième joueur @warning <50 char */
+  char username3[50];   /** @brief Nom du troisième joueur @warning <50 char */
+  char username4[50];   /** @brief Nom du quatrième joueur @warning <50 char */
   int score1;           /** @brief Score actuel du joueur 1 @warning >0 */
   int score2;           /** @brief Score actuel du joueur 2 @warning >0 */
-  int winUsername;      /**< 0 si aucun gagnant, 1 pour joueur 1, 2 pour joueur 2 */
+  int score3;           /** @brief Score actuel du joueur 3 @warning >0 */
+  int score4;           /** @brief Score actuel du joueur 4 @warning >0 */
+  int winUsername;      /**< 0 si aucun gagnant, 1 pour joueur 1, 2 pour joueur 2, 3 pour joueur 3, 4 pour joueur 4 */
 } HistoricalGame;
 
 /**
@@ -24,7 +28,7 @@ typedef struct {
  * * @return HistoricalGame* Un pointeur vers la nouvelle partie, ou NULL en cas d'échec d'allocation.
  * * @warning les username doit faire moins de 50 char. 
  */
-HistoricalGame* createHistoricalGame(const char* usernamePlayer1, const char* usernamePlayer2);
+HistoricalGame* createHistoricalGame(const char* usernamePlayer1, const char* usernamePlayer2, const char* usernamePlayer3, const char* usernamePlayer4);
 
 /**
  * @brief Augmente le score d'un joueur spécifique.
