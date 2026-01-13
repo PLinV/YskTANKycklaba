@@ -54,6 +54,14 @@ int whoWin(HistoricalGame* game, int winner);
 int getLastGameId();
 
 /**
+ * @brief savoir le score entre les deux joueurs.
+ * * @param game Pointeur vers la partie en cours.
+ * * @return 
+ *  * * @warning Il faut qu'il y ait exactement deux joueurs dans la partie. 
+ */
+void J1vsJ2Score(HistoricalGame* game, int* nbPartieGagnerJ1, int* nbPartieGagnerJ2);
+
+/**
  * @brief sauvegarde la game dans le historicalGame.txt
  * * @param game Pointeur vers la partie en cours qui veut être sauvegarder
  * * @return int Retourne 0 en cas de succès, ou -1 si les paramètres sont invalides (ex: game est NULL).
