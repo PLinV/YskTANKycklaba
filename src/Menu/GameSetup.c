@@ -343,7 +343,8 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
                }
            }
       }
-
+      
+      // 1v1 score
       if(totalPlayers == 2 && IsKeyPressed(KEY_ENTER)) {
           strcpy(username1, setupJoueurs[0].pseudo);
           strcpy(username2, setupJoueurs[1].pseudo);
