@@ -11,6 +11,7 @@
 #define MAX_BLOCK_TYPES 12
 #define MAX_MAPS_IN_LIST 20
 #define MAPS_DIR "src/Graphisme/Maps"
+#define ASSETS_BLOC_DIR "src/Graphisme/assets/texture_bloc"
 
 // --- ENUMS ---
 typedef enum { MODE_VISUAL, MODE_COLLISION } EditorMode;
@@ -27,7 +28,8 @@ typedef struct {
   int width;
   int height;
   int *tileMap;      // IDs for visual map
-  int *collisionMap; // 0: Empty, 1: Wall, 2: Spawn P1, 3: Spawn P2
+  int *collisionMap; // 0: Empty, 1: Wall, 2: Destructible Wall, 3: Spawn
+  int underlayId;    // Default replacement texture ID
 } MapData;
 
 // --- VARIABLES GLOBALES ---
@@ -37,6 +39,7 @@ int selectedCollisionType = 1; // Default to Wall
 MapData currentMap;
 Rectangle mapDrawArea;
 EditorMode currentMode = MODE_VISUAL;
+bool isChoosingUnderlay = false;
 
 // File Management
 FilePathList mapFiles;
@@ -108,6 +111,10 @@ void RunEditor(void) {
       }
       UpdateMapTile();
     }
+
+    // Reset isChoosingUnderlay if mode changes
+    if (currentMode == MODE_COLLISION)
+      isChoosingUnderlay = false;
 
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
@@ -239,25 +246,52 @@ void InitializeMapData(int width, int height) {
 }
 
 void InitializePalette(void) {
-  palette[0] = (BlockDefinition){0, "Sol Herbe", LIME, {0}};
-  palette[1] = (BlockDefinition){1, "Sol Terre", BROWN, {0}};
-  palette[2] = (BlockDefinition){2, "Mur Brique", RED, {0}};
-  palette[3] = (BlockDefinition){3, "Obstacle Roche", DARKGRAY, {0}};
-  // Spawns (4, 5)
-  palette[4] = (BlockDefinition){4, "Spawn P1", BLUE, {0}};
-  palette[5] = (BlockDefinition){5, "Spawn P2", ORANGE, {0}};
-  // New Blocks
-  palette[6] = (BlockDefinition){6, "Eau", SKYBLUE, {0}};
-  palette[7] = (BlockDefinition){7, "Sable", BEIGE, {0}};
-  palette[8] = (BlockDefinition){8, "Bois", DARKBROWN, {0}};
-  palette[9] = (BlockDefinition){9, "Pierre", LIGHTGRAY, {0}};
-  palette[10] = (BlockDefinition){10, "Neige", RAYWHITE, {0}};
-  palette[11] = (BlockDefinition){11, "Lave", MAROON, {0}};
-
+  // Clear palette first
   for (int i = 0; i < MAX_BLOCK_TYPES; i++) {
-    Image img =
-        GenImageColor(TILE_DEFAULT_SIZE, TILE_DEFAULT_SIZE, palette[i].color);
-    palette[i].texture = LoadTextureFromImage(img);
+    palette[i].id = -1;
+    palette[i].texture.id = 0;
+  }
+
+  // Load from directory
+  if (!DirectoryExists(ASSETS_BLOC_DIR))
+    return;
+
+  FilePathList files = LoadDirectoryFiles(ASSETS_BLOC_DIR);
+  for (int i = 0; i < (int)files.count; i++) {
+    const char *fname = GetFileName(files.paths[i]);
+    int id = -1;
+    char nameBuffer[64] = {0};
+
+    // Parse "X_name.ext"
+    // Find first underscore
+    const char *underscore = strchr(fname, '_');
+    if (underscore) {
+      // Parse ID
+      char idStr[16] = {0};
+      strncpy(idStr, fname, underscore - fname);
+      id = atoi(idStr);
+
+      // Parse Name (remove extension)
+      strcpy(nameBuffer, underscore + 1);
+      char *dot = strrchr(nameBuffer, '.');
+      if (dot)
+        *dot = '\0';
+    }
+
+    if (id >= 0 && id < MAX_BLOCK_TYPES) {
+      palette[id].id = id;
+      strncpy(palette[id].name, nameBuffer, 31);
+      palette[id].texture = LoadTexture(files.paths[i]);
+      palette[id].color = WHITE;
+    }
+  }
+  UnloadDirectoryFiles(files);
+
+  // Ensure we have at least defaults if empty (Fallback)
+  if (palette[0].texture.id == 0) {
+    Image img = GenImageColor(32, 32, GREEN);
+    palette[0] =
+        (BlockDefinition){0, "Default", GREEN, LoadTextureFromImage(img)};
     UnloadImage(img);
   }
 }
@@ -284,7 +318,7 @@ void LoadMap(const char *filename) {
     }
   }
 
-  int w, h, spawnP1, spawnP2;
+  int w, h, nbSpawn, underlayId;
   char *token = strtok(text, " ");
 
   if (!token) {
@@ -305,16 +339,17 @@ void LoadMap(const char *filename) {
     UnloadFileText(text);
     return;
   }
-  spawnP1 = atoi(token); // Ignored for now
+  nbSpawn = atoi(token);
 
   token = strtok(NULL, " ");
   if (!token) {
     UnloadFileText(text);
     return;
   }
-  spawnP2 = atoi(token); // Ignored for now
+  underlayId = atoi(token);
 
   InitializeMapData(w, h);
+  currentMap.underlayId = underlayId;
 
   // Read Collision Matrix
   for (int i = 0; i < w * h; i++) {
@@ -329,9 +364,10 @@ void LoadMap(const char *filename) {
       else if (val == 1)
         currentMap.tileMap[i] = 2;
       else if (val == 2)
-        currentMap.tileMap[i] = 4;
+        currentMap.tileMap[i] = 2; // Default Box for Destr
       else if (val == 3)
-        currentMap.tileMap[i] = 5;
+        currentMap.tileMap[i] = 0; // Ground for Spawn
+      // Note: visual map should be loaded from _vis file usually.
     } else {
       currentMap.collisionMap[i] = 0;
     }
@@ -365,17 +401,15 @@ void SaveMap(void) {
     return;
 
   // Count Spawns
-  int spawnP1 = 0;
-  int spawnP2 = 0;
+  // Count Spawns
+  int nbSpawn = 0;
   for (int i = 0; i < currentMap.width * currentMap.height; i++) {
-    if (currentMap.collisionMap[i] == 2)
-      spawnP1++;
     if (currentMap.collisionMap[i] == 3)
-      spawnP2++;
+      nbSpawn++;
   }
 
-  fprintf(file, "%d,%d,%d,%d\n", currentMap.width, currentMap.height, spawnP1,
-          spawnP2);
+  fprintf(file, "%d,%d,%d,%d\n", currentMap.width, currentMap.height, nbSpawn,
+          currentMap.underlayId);
 
   // Write Collision Matrix
   for (int y = 0; y < currentMap.height; y++) {
@@ -575,6 +609,37 @@ void DrawUI(void) {
     ResizeMap(0, 1);
   y += 30;
 
+  // --- UNDERLAY SELECTOR (REPLACER) ---
+  DrawText("Destructible Replace Texture:", 10, y, 10, GRAY);
+  y += 20;
+
+  // Find current underlay texture
+  Texture2D underlayTex = palette[0].texture; // Default
+  for (int i = 0; i < MAX_BLOCK_TYPES; i++) {
+    if (palette[i].id == currentMap.underlayId) {
+      underlayTex = palette[i].texture;
+      break;
+    }
+  }
+
+  Rectangle rSetup = {10, (float)y, 50, 50};
+  DrawTexturePro(
+      underlayTex,
+      (Rectangle){0, 0, (float)underlayTex.width, (float)underlayTex.height},
+      rSetup, (Vector2){0, 0}, 0, WHITE);
+
+  if (isChoosingUnderlay) {
+    DrawRectangleLinesEx(rSetup, 3, GREEN);
+    DrawText("SELECT BELOW...", 70, y + 20, 10, GREEN);
+  } else {
+    DrawRectangleLinesEx(rSetup, 1, DARKGRAY);
+    if (CheckCollisionPointRec(GetMousePosition(), rSetup) &&
+        IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      isChoosingUnderlay = !isChoosingUnderlay;
+    }
+  }
+  y += 60;
+
   // --- PALETTE / COLLISION TOOLS ---
   if (currentMode == MODE_VISUAL) {
     DrawText("Visual Palette:", 10, y, 10, GRAY);
@@ -583,23 +648,30 @@ void DrawUI(void) {
     int py = y;
 
     for (int i = 0; i < MAX_BLOCK_TYPES; i++) {
-      // Skip Spawns (4 and 5) in Visual Palette
-      if (i == 4 || i == 5)
-        continue;
+      if (palette[i].id == -1)
+        continue; // Skip empty
 
       Rectangle pRect = {(float)px, (float)py, 40, 40};
-      DrawTexturePro(palette[i].texture, (Rectangle){0, 0, 32, 32}, pRect,
-                     (Vector2){0, 0}, 0, WHITE);
-      if (selectedBlockId == palette[i].id)
+      DrawTexturePro(palette[i].texture,
+                     (Rectangle){0, 0, (float)palette[i].texture.width,
+                                 (float)palette[i].texture.height},
+                     pRect, (Vector2){0, 0}, 0, WHITE);
+
+      if (selectedBlockId == palette[i].id && !isChoosingUnderlay)
         DrawRectangleLinesEx(pRect, 2, RED);
 
+      // Logic for selection or underlay choice
       if (CheckCollisionPointRec(GetMousePosition(), pRect) &&
           IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        selectedBlockId = palette[i].id;
+        if (isChoosingUnderlay) {
+          currentMap.underlayId = palette[i].id;
+          isChoosingUnderlay = false; // Auto-exit selection mode
+        } else {
+          selectedBlockId = palette[i].id;
+        }
       }
 
       px += 45;
-      // Wrap if too wide (assuming uiWidth ~400)
       if (px > 350) {
         px = 10;
         py += 45;
@@ -619,23 +691,23 @@ void DrawUI(void) {
         IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
       selectedCollisionType = 1;
 
-    // P1 Button
-    Rectangle rP1 = {100, (float)y, 80, 30};
+    // Destructible Button
+    Rectangle rDest = {100, (float)y, 80, 30};
     if (selectedCollisionType == 2)
-      DrawRectangleRec(rP1, LIGHTGRAY);
-    DrawRectangleLinesEx(rP1, 1, BLUE);
-    DrawText("SPAWN P1", 110, y + 10, 10, BLUE);
-    if (CheckCollisionPointRec(GetMousePosition(), rP1) &&
+      DrawRectangleRec(rDest, LIGHTGRAY);
+    DrawRectangleLinesEx(rDest, 1, GREEN);
+    DrawText("DESTRUCT", 110, y + 10, 10, GREEN);
+    if (CheckCollisionPointRec(GetMousePosition(), rDest) &&
         IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
       selectedCollisionType = 2;
 
-    // P2 Button
-    Rectangle rP2 = {190, (float)y, 80, 30};
+    // Spawn Button
+    Rectangle rSpawn = {190, (float)y, 80, 30};
     if (selectedCollisionType == 3)
-      DrawRectangleRec(rP2, LIGHTGRAY);
-    DrawRectangleLinesEx(rP2, 1, ORANGE);
-    DrawText("SPAWN P2", 200, y + 10, 10, ORANGE);
-    if (CheckCollisionPointRec(GetMousePosition(), rP2) &&
+      DrawRectangleRec(rSpawn, LIGHTGRAY);
+    DrawRectangleLinesEx(rSpawn, 1, BLUE);
+    DrawText("SPAWN", 200, y + 10, 10, BLUE);
+    if (CheckCollisionPointRec(GetMousePosition(), rSpawn) &&
         IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
       selectedCollisionType = 3;
 
@@ -670,12 +742,12 @@ void DrawMap(void) {
         if (colType == 1) { // Wall
           DrawRectangleRec(dest, (Color){255, 0, 0, 150});
           DrawText("W", dest.x + 5, dest.y + 5, 10, WHITE);
-        } else if (colType == 2) { // P1
+        } else if (colType == 2) { // Destructible
+          DrawRectangleRec(dest, (Color){0, 255, 0, 150});
+          DrawText("D", dest.x + 5, dest.y + 5, 10, WHITE);
+        } else if (colType == 3) { // Spawn
           DrawRectangleRec(dest, (Color){0, 0, 255, 150});
-          DrawText("P1", dest.x + 5, dest.y + 5, 10, WHITE);
-        } else if (colType == 3) { // P2
-          DrawRectangleRec(dest, (Color){255, 165, 0, 150});
-          DrawText("P2", dest.x + 5, dest.y + 5, 10, WHITE);
+          DrawText("S", dest.x + 5, dest.y + 5, 10, WHITE);
         } else {
           DrawRectangleRec(dest, (Color){0, 255, 0, 50}); // Empty
         }
@@ -701,7 +773,9 @@ void UpdateMapTile(void) {
 
       if (currentMode == MODE_VISUAL) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-          currentMap.tileMap[index] = selectedBlockId;
+          if (!isChoosingUnderlay) {
+            currentMap.tileMap[index] = selectedBlockId;
+          }
         }
       } else {
         // Collision Mode
