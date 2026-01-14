@@ -3,9 +3,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../dataCode/historicalGame.h"
+#include "../dataCode/user.h"
+
 
 typedef struct {
-  char pseudo[16];
+  char pseudo[32];
   int skinID; // 0=BLUE, 1=RED, 2=GREEN, 3=ORANGE
   Rectangle bounds;
   bool isEditing;
@@ -189,6 +192,12 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
     }
   }
 
+  // partie user
+  char username1[32] = "";
+  char username2[32] = "";
+  int nbPartieGagnerJ1 = 0;
+  int nbPartieGagnerJ2 = 0;
+
   while (!WindowShouldClose() && !mapSelected) {
     // --- INPUT GESTION ---
     if (IsKeyPressed(KEY_BACKSPACE)) {
@@ -333,6 +342,19 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
                    clickedInUI = true;
                }
            }
+      }
+
+      if(totalPlayers == 2 && IsKeyPressed(KEY_ENTER)) {
+          strcpy(username1, setupJoueurs[0].pseudo);
+          strcpy(username2, setupJoueurs[1].pseudo);
+          User* user1 = getUser(username1);
+          User* user2 = getUser(username2);
+          HistoricalGame* currentGame = createHistoricalGame(username1, username2, "NULL", "NULL");
+          J1vsJ2Score(currentGame,&nbPartieGagnerJ1,&nbPartieGagnerJ2);
+      }
+
+      if(totalPlayers == 2)  {
+        DrawText(TextFormat("%s   %d  -- %d   %s", username1, nbPartieGagnerJ1, nbPartieGagnerJ2, username2), 100, 50, 20, RED);
       }
 
       // Sélection Skin
