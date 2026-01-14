@@ -31,7 +31,7 @@ void RunCredits(void) {
         DrawRectangleLinesEx(btnHome, 2, WHITE);
         
         // Centrer le texte "Home" dans le bouton
-        const char* homeText = "< Home";
+        const char* homeText = "< Retour";
         int homeFontSize = 20;
         int homeTextWidth = MeasureText(homeText, homeFontSize);
         DrawText(homeText, 
@@ -54,7 +54,7 @@ void RunCredits(void) {
         const char *creditsText[] = {
             "Jeu développé par :",
             "",
-            "BORDET Aurélien"
+            "BORDET Aurélien",
             "LAGRANGE Gauthier",
             "BENGHACHEM Hatem",
             "VERRIERE Paulin",
@@ -64,7 +64,7 @@ void RunCredits(void) {
         int startY = 250;
         int spacing = 50;
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 7; i++) {
             Color textColor = (i == 0) ? YELLOW : WHITE; // Titre de section en jaune
             int textFontSize = (i == 0) ? 35 : 30;
             
