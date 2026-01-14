@@ -354,7 +354,25 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
       }
 
       if(totalPlayers == 2)  {
-        DrawText(TextFormat("%s   %d  -- %d   %s", username1, nbPartieGagnerJ1, nbPartieGagnerJ2, username2), 100, 50, 20, RED);
+        const char* scoreText = TextFormat("%s : %d   VS   %d : %s", username1, nbPartieGagnerJ1, nbPartieGagnerJ2, username2);
+        int fontSize = 30;
+        int textW = MeasureText(scoreText, fontSize);
+        int padding = 20;
+        int rectW = textW + padding * 2;
+        int rectH = fontSize + padding;
+        
+        float screenCenter = GetScreenWidth() / 2.0f;
+        float rectX = screenCenter - rectW / 2.0f;
+        float rectY = 40; // Position Y
+
+        // Draw styled box
+        DrawRectangle(rectX, rectY, rectW, rectH, Fade(BLACK, 0.6f));
+        DrawRectangleLines(rectX, rectY, rectW, rectH, GOLD);
+        
+        // Draw Shadow for text
+        DrawText(scoreText, rectX + padding + 2, rectY + padding/2 + 2, fontSize, BLACK); 
+        // Draw Main Text
+        DrawText(scoreText, rectX + padding, rectY + padding/2, fontSize, GOLD);
       }
 
       // Sélection Skin
