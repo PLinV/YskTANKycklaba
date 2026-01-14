@@ -13,42 +13,48 @@
 #include "../dataCode/historicalGame.h"
 
 
+
+
 // --- NOUVELLE FONCTION POUR LE BOUTON IMAGE ---
 bool DrawImageButton(Rectangle bounds, Texture2D texture) {
   bool pressed = false;
   Vector2 mousePoint = GetMousePosition();
   bool isHover = CheckCollisionPointRec(mousePoint, bounds);
-
+  
   // Changement de teinte au survol pour donner un effet visuel
   // WHITE = couleur normale, LIGHTGRAY = un peu plus sombre quand on passe la
   // souris
   Color tint = isHover ? LIGHTGRAY : WHITE;
-
+  
   if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     pressed = true;
   }
-
+  
   // On dessine l'image en l'étirant pour qu'elle remplisse le rectangle
   // "bounds"
   DrawTexturePro(texture,
-                 (Rectangle){0, 0, (float)texture.width,
-                             (float)texture.height}, // Source (toute l'image)
-                 bounds, // Destination (taille du bouton définie dans le main)
-                 (Vector2){0, 0}, 0.0f, tint);
+    (Rectangle){0, 0, (float)texture.width,
+      (float)texture.height}, // Source (toute l'image)
+      bounds, // Destination (taille du bouton définie dans le main)
+      (Vector2){0, 0}, 0.0f, tint);
+      
+      return pressed;
+    }
+    
+    
+    int main() {
+      InitWindow(1000, 640, "YskTANKycklaba - Menu");
+      SetTargetFPS(60);
+      SetWindowState(FLAG_WINDOW_RESIZABLE);
+      
 
-  return pressed;
-}
+      // on initialise les users
+      User* users[4] = {NULL, NULL, NULL, NULL};
 
-
-int main() {
-  InitWindow(1000, 640, "YskTANKycklaba - Menu");
-  SetTargetFPS(60);
-  SetWindowState(FLAG_WINDOW_RESIZABLE);
-
-  // 1. INITIALISER LE PÉRIPHÉRIQUE AUDIO
-  InitAudioDevice();
-  // 2. CHARGER LA MUSIQUE
-  Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenu.mp3");
+      // 1. INITIALISER LE PÉRIPHÉRIQUE AUDIO
+      InitAudioDevice();
+      // 2. CHARGER LA MUSIQUE
+      Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenu.mp3");
   bool musiqueLoad;
   // 3. LANCER LA LECTURE
   if (musicMenu.frameCount > 0) {
@@ -131,9 +137,9 @@ int main() {
                         btnPlayImg)) {
       char mapPath[512] = {0};
       int playerCount = 2;
-      RunGameSetup(mapPath, &playerCount);
+      RunGameSetup(mapPath, &playerCount, users);
       if (mapPath[0] != '\0') {
-        int winner = RunGame(mapPath, playerCount);
+        int winner = RunGame(mapPath, playerCount, users);
         SetWindowTitle("YskTANKycklaba - Menu");
         
         // If we have a valid winner (or draw = -1 but loop finished? wait, my logic returns -1 for early exit too)
@@ -146,8 +152,8 @@ int main() {
         
         // If winner != -1, show game over.
         if (winner != -1) {
-             RunGameOver(winner);
-             SetWindowTitle("YskTANKycklaba - Menu");
+            RunGameOver(winner, users);
+            SetWindowTitle("YskTANKycklaba - Menu");
         }
       }
     }

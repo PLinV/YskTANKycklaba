@@ -5,6 +5,7 @@
 #include <time.h>
 #include <raylib.h>
 #include "Game.h"
+#include "../dataCode/user.h"
 
 void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu, float dU, char *map, int W, int H, bool *exitGame, Texture2D *textureArray)
 {
@@ -491,7 +492,7 @@ void checkWin(bool *exitGame, player *p, int playerCount)
     }
 }
 
-int RunGame(char *mapPath, int playersCount)
+int RunGame(char *mapPath, int playersCount, User* users[])
 {
 
     SetWindowTitle("YskTANKycklaba - Game");

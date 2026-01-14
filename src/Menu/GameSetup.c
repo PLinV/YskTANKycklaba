@@ -77,9 +77,8 @@ void DisplayMap(MapUI *maps, int count, int *mapIndex) {
   if (count == 0) return;
 
   // Navigation (Cyclic)
-  if (IsKeyPressed(KEY_RIGHT)) *mapIndex = (*mapIndex + 1) % count;
-  if (IsKeyPressed(KEY_LEFT)) *mapIndex = (*mapIndex - 1 + count) % count;
-
+  bool nextMap = IsKeyPressed(KEY_RIGHT);
+  bool prevMap = IsKeyPressed(KEY_LEFT);
   // Center Position for Carousel
   float centerX = GetScreenWidth() / 2;
   float centerY = GetScreenHeight() * 0.72; // Slightly higher to leave room for button
@@ -109,11 +108,38 @@ void DisplayMap(MapUI *maps, int count, int *mapIndex) {
   } else {
     DrawText("No Image", x + size * 0.3, y + size / 2, 20, GRAY);
   }
+  // --- BOUTONS FLÈCHES (INTERACTIFS) ---
+  Vector2 mousePoint = GetMousePosition();
+  // 1. BOUTON GAUCHE "<"
+  // On définit une zone cliquable autour du texte (un peu plus large pour faciliter le clic)
+  Rectangle btnLeftRect = { x - 70, y + size/2 - 25, 50, 50 }; 
+  Color colorLeft = WHITE;
 
-  // Draw arrows for visual clue
-  DrawText("<", x - 60, y + size/2 - 20, 40, WHITE);
-  DrawText(">", x + size + 40, y + size/2 - 20, 40, WHITE);
+  if (CheckCollisionPointRec(mousePoint, btnLeftRect)) {
+    colorLeft = GOLD; // Change de couleur au survol
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      prevMap = true; // Active le changement
+    }
+  }
+  DrawText("<", x - 60, y + size/2 - 20, 40, colorLeft);
 
+  // 2. BOUTON DROIT ">"
+  // On définit une zone cliquable
+  Rectangle btnRightRect = { x + size + 30, y + size/2 - 25, 50, 50 };
+  Color colorRight = WHITE;
+
+  if (CheckCollisionPointRec(mousePoint, btnRightRect)) {
+    colorRight = GOLD; // Change de couleur au survol
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      nextMap = true; // Active le changement
+    }
+  }
+  DrawText(">", x + size + 40, y + size/2 - 20, 40, colorRight);
+  // --- APPLICATION DU CHANGEMENT ---
+  // On applique le changement d'index ici, qu'il vienne du clavier ou de la souris
+  if (nextMap) *mapIndex = (*mapIndex + 1) % count;
+  if (prevMap) *mapIndex = (*mapIndex - 1 + count) % count;
+  
   // PREVIOUS (Smaller and darker)
   if (count > 1) {
     float sideSize = size * 0.7;
@@ -138,14 +164,15 @@ void DisplayMap(MapUI *maps, int count, int *mapIndex) {
 
     DrawRectangle(sideX, sideY, sideSize, sideSize, Fade(BLACK, 0.5f));
     if (maps[next].hasTexture) {
-        DrawTexturePro(maps[next].texture,
-                 (Rectangle){0, 0, maps[next].texture.width, maps[next].texture.height},
-                 (Rectangle){sideX, sideY, sideSize, sideSize}, (Vector2){0, 0}, 0.0f, Fade(WHITE, 0.5f));
+      DrawTexturePro(maps[next].texture,
+        (Rectangle){0, 0, maps[next].texture.width, maps[next].texture.height},
+        (Rectangle){sideX, sideY, sideSize, sideSize}, (Vector2){0, 0}, 0.0f, Fade(WHITE, 0.5f));
     }
   }
 }
 
-void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
+void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User* users[]) {
+  // users 
 
   Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenuStart.mp3");
   bool musiqueLoad;
@@ -357,9 +384,11 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
            if (!exists && strlen(setupJoueurs[i].pseudo) > 0) {
                Rectangle createBtn = {pseudoRect.x + pseudoRect.width + 5, pseudoRect.y, 60, 30};
                if (DrawStyledButton(createBtn, "Créer", false)) {
-                   // Logic placeholder for create
-                   editingPlayer = -1;
-                   clickedInUI = true;
+                   
+                  User* currentUser = createUser(setupJoueurs[i].pseudo);
+                  saveUser(currentUser);  
+                  editingPlayer = -1;
+                  clickedInUI = true;
                }
            }
       }
@@ -368,8 +397,6 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
       if(totalPlayers == 2 && IsKeyPressed(KEY_ENTER)) {
           strcpy(username1, setupJoueurs[0].pseudo);
           strcpy(username2, setupJoueurs[1].pseudo);
-          User* user1 = getUser(username1);
-          User* user2 = getUser(username2);
           HistoricalGame* currentGame = createHistoricalGame(username1, username2, "NULL", "NULL");
           J1vsJ2Score(currentGame,&nbPartieGagnerJ1,&nbPartieGagnerJ2);
       }
@@ -444,9 +471,14 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
     // Draw Text "LANCER" manually if image fails, but we assume image exists
     if (DrawImageButton(startBtnRect, btnStartImg)) {
          if (mapIndex >= 0 && mapIndex < mapCount) {
-             strcpy(selectedMapPath, maps[mapIndex].path);
-             *finalPlayerCount = totalPlayers;
-             mapSelected = true;
+            strcpy(selectedMapPath, maps[mapIndex].path);
+            *finalPlayerCount = totalPlayers;
+            mapSelected = true;
+            for (int i = 0; i< *finalPlayerCount; i++) {
+              char* pseudoActuel = setupJoueurs[i].pseudo;
+              users[i] = getUser(setupJoueurs[i].pseudo);
+              printf("\n ----%d---- \n",users[i]->gamePlayed);
+            }
          }
     }
 
