@@ -1,7 +1,7 @@
 #include <raylib.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "../dataCode/user.h"
 #include "render.h"
 
 void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu,

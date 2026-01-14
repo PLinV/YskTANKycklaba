@@ -498,7 +498,7 @@ void checkWin(bool *exitGame, player *p, int playerCount) {
   }
 }
 
-int RunGame(char *mapPath, int playersCount) {
+int RunGame(char *mapPath, int playersCount, User* users[]) {
 
   SetWindowTitle("YskTANKycklaba - Game");
 
