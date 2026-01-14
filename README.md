@@ -15,4 +15,8 @@ cd ../../
 #Pour lancer le jeu : 
 make 
 ./prog
+
+#Pour avoir du son(si ça fonctionne pas essayer) : 
+sudo apt-get update
+sudo apt-get install libasound2-dev libpulse-dev
 ```
