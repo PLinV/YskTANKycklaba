@@ -1,6 +1,8 @@
 #include "menu.h"
 #include "../Game/Game.h"
 #include "../Graphisme/graphisme.h"
+#include "../statPage/statPage.h"
+#include "../Credits/credits.h"
 #include "GameSetup.h"
 #include "raylib.h"
 #include <stdio.h>
@@ -74,6 +76,11 @@ int main() {
     printf("Failed to load image bouton stats.\n");
   }
 
+  Texture2D btnCreditsImg = LoadTexture("src/Menu/images/bouton_credits.jpg");
+  if (btnCreditsImg.id == 0) {
+    printf("Failed to load image bouton credits.\n");
+  }
+
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
     UpdateMusicStream(music);
@@ -141,12 +148,25 @@ int main() {
       break;
     }
 
+    // 5. Crédits (En bas à gauche)
+    int creditsWidth = 150;
+    int creditsHeight = 50;
+    int creditsMargin = 20;
+    if (DrawImageButton((Rectangle){creditsMargin,
+                                    GetScreenHeight() - creditsHeight - creditsMargin,
+                                    creditsWidth, creditsHeight},
+                        btnCreditsImg)) {
+      RunCredits();
+      SetWindowTitle("YskTANKycklaba - Menu");
+    }
+
     EndDrawing();
   }
 
   // --- 3. DÉCHARGEMENT DE LA MÉMOIRE ---
   UnloadTexture(background);
   UnloadTexture(btnPlayImg);
+  UnloadTexture(btnCreditsImg);
   UnloadMusicStream(music); // Décharger la musique de la RAM
   CloseAudioDevice();       // Fermer le périphérique audio
   CloseWindow();

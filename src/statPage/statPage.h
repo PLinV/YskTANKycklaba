@@ -4,4 +4,6 @@
 #include "../dataCode/user.h"
 #include <stdbool.h>
 
+int RunStats(void);
+
 #endif
