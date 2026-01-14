@@ -5,8 +5,20 @@ CFLAGS = -I./src -Iraylib/src -Wall
 # ----- Configuration Linux -----
 # Au lieu de -lraylib, on pointe vers le fichier précis que vous avez compilé
 RAYLIB_LIB = raylib/src/libraylib.a
-# On ajoute les dépendances système obligatoires pour Linux
-LDFLAGS = $(RAYLIB_LIB) -lGL -lm -lpthread -ldl -lrt -lX11
+# Détection de l'OS avec shell
+DETECTED_OS := $(shell uname -s)
+$(info Detected OS: $(DETECTED_OS))
+
+# Si on est sur Windows (Mingw)
+ifneq (,$(findstring MINGW,$(DETECTED_OS)))
+    # Configuration Windows
+    $(info Configuring for Windows...)
+    LDFLAGS = $(RAYLIB_LIB) -lopengl32 -lgdi32 -lwinmm
+else
+    # Configuration Linux / WSL
+    $(info Configuring for Linux/WSL...)
+    LDFLAGS = $(RAYLIB_LIB) -lGL -lm -lpthread -ldl -lrt -lX11
+endif
 
 # Nom de l'exécutable
 EXEC_GAME = prog
