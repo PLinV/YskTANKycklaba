@@ -88,7 +88,7 @@
         DrawRectangleRec(btnHome, homeHover ? LIGHTGRAY : DARKGRAY);
         DrawRectangleLinesEx(btnHome, 2, WHITE);
         
-        const char* homeText = "< Home";
+        const char* homeText = "< Retour";
         int homeFontSize = 20;
         int homeTextWidth = MeasureText(homeText, homeFontSize);
         DrawText(homeText, 

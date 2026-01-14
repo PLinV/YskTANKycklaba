@@ -5,6 +5,7 @@
 #include "../Credits/credits.h"
 #include "GameSetup.h"
 #include "GameOver.h"
+#include "Settings.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,26 +15,40 @@
 
 
 // --- NOUVELLE FONCTION POUR LE BOUTON IMAGE ---
-bool DrawImageButton(Rectangle bounds, Texture2D texture) {
+// enabled: si false, le bouton est dessiné (éventuellement grisé) mais pas cliquable.
+bool DrawImageButton(Rectangle bounds, Texture2D texture, bool enabled) {
   bool pressed = false;
   Vector2 mousePoint = GetMousePosition();
   bool isHover = CheckCollisionPointRec(mousePoint, bounds);
 
   // Changement de teinte au survol pour donner un effet visuel
-  // WHITE = couleur normale, LIGHTGRAY = un peu plus sombre quand on passe la
-  // souris
-  Color tint = isHover ? LIGHTGRAY : WHITE;
+  // Si disable, on peut le griser davantage ou ne pas changer la teinte
+  Color tint = enabled ? (isHover ? LIGHTGRAY : WHITE) : Fade(WHITE, 0.5f);
 
-  if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+  if (enabled && isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     pressed = true;
+  }
+  
+  // Effet d'agrandissement au survol
+  Rectangle destRect = bounds;
+  if (enabled && isHover) {
+      float scale = 1.15f; // +5% de taille
+      float newWidth = bounds.width * scale;
+      float newHeight = bounds.height * scale;
+      
+      // Recentre le bouton agrandi
+      destRect.x = bounds.x - (newWidth - bounds.width) / 2.0f;
+      destRect.y = bounds.y - (newHeight - bounds.height) / 2.0f;
+      destRect.width = newWidth;
+      destRect.height = newHeight;
   }
 
   // On dessine l'image en l'étirant pour qu'elle remplisse le rectangle
-  // "bounds"
+  // "bounds" (ou destRect si scale)
   DrawTexturePro(texture,
                  (Rectangle){0, 0, (float)texture.width,
                              (float)texture.height}, // Source (toute l'image)
-                 bounds, // Destination (taille du bouton définie dans le main)
+                 destRect, // Destination (taille du bouton définie dans le main ou agrandie)
                  (Vector2){0, 0}, 0.0f, tint);
 
   return pressed;
@@ -62,10 +77,24 @@ int main() {
     musiqueLoad = false;
   }
 
-  Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
-  // TEST POUR VOIR SI L'IMAGE CHARGE BIEN
-  if (background.id == 0) {
-    printf("Failed to load background image.\n");
+  // --- Chargement de l'arrière-plan (GIF ou Statique) ---
+  int animFrames = 0;
+  Image imBackgroundAnim = LoadImageAnim("src/Menu/images/background_start_dyna.gif", &animFrames);
+  Texture2D background;
+  bool isAnim = false;
+  int currentAnimFrame = 0;
+  int frameCounter = 0;
+  int animSpeed = 4; // Vitesse de l'animation
+
+  if (imBackgroundAnim.data != NULL) {
+      printf("Animation d'arrière-plan chargée ! Frames: %d\n", animFrames);
+      background = LoadTextureFromImage(imBackgroundAnim);
+      isAnim = true;
+  } else {
+      background = LoadTexture("src/Menu/images/background_start.jpg");
+      if (background.id == 0) { 
+        printf("Echec du chargement de l'image d'arrière-plan.\n");
+      }
   }
 
   Texture2D btnPlayImg = LoadTexture("src/Menu/images/bouton_jouer.jpg");
@@ -93,11 +122,33 @@ int main() {
     printf("Failed to load image bouton credits.\n");
   }
 
+  Texture2D btnSettingsImg = LoadTexture("src/Menu/images/bouton_paramètre.jpg");
+  if (btnSettingsImg.id == 0) {
+      printf("Failed to load image bouton parametre.\n");
+  }
+
+  bool isSettingsOpen = false;
+
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
     
     if (musiqueLoad) {
       UpdateMusicStream(musicMenu);
+    }
+    
+    // Mise à jour de l'animation d'arrière-plan
+    if (isAnim) {
+        frameCounter++;
+        if (frameCounter >= animSpeed) {
+            currentAnimFrame++;
+            if (currentAnimFrame >= animFrames) currentAnimFrame = 0;
+
+            // Mise à jour vers la frame suivante
+            unsigned int nextFrameDataOffset = (unsigned int)imBackgroundAnim.width * imBackgroundAnim.height * 4 * currentAnimFrame;
+            UpdateTexture(background, ((unsigned char *)imBackgroundAnim.data) + nextFrameDataOffset);
+            
+            frameCounter = 0;
+        }
     }
 
     BeginDrawing();
@@ -128,23 +179,14 @@ int main() {
 
     // 1. Jouer
     if (DrawImageButton((Rectangle){centerX, startY, buttonWidth, buttonHeight},
-                        btnPlayImg)) {
+                        btnPlayImg, !isSettingsOpen)) {
       char mapPath[512] = {0};
       int playerCount = 2;
       RunGameSetup(mapPath, &playerCount);
       if (mapPath[0] != '\0') {
         int winner = RunGame(mapPath, playerCount);
         SetWindowTitle("YskTANKycklaba - Menu");
-        
-        // If we have a valid winner (or draw = -1 but loop finished? wait, my logic returns -1 for early exit too)
-        // Let's assume RunGame returns -1 if aborted, and logic handled in RunGame distinguishes.
-        // Actually I set winner = -1 by default in Game.c.
-        // If I exit with BACKSPACE, winner stays -1.
-        // If I exit with Win, winner becomes ID.
-        // What if it's a draw? 
-        // My checkWin only checks if one is left.
-        
-        // If winner != -1, show game over.
+
         if (winner != -1) {
              RunGameOver(winner);
              SetWindowTitle("YskTANKycklaba - Menu");
@@ -155,7 +197,7 @@ int main() {
     // 2. Statistiques
     if (DrawImageButton((Rectangle){centerX, startY + buttonHeight + spacing,
                                     buttonWidth, buttonHeight},
-                        btnStatsImg)) {
+                        btnStatsImg, !isSettingsOpen)) {
       RunStats(musicMenu);
       SetWindowTitle("YskTANKycklaba - Menu");
     }
@@ -164,7 +206,7 @@ int main() {
     if (DrawImageButton((Rectangle){centerX,
                                     startY + 2 * (buttonHeight + spacing),
                                     buttonWidth, buttonHeight},
-                        btnEditorImg)) {
+                        btnEditorImg, !isSettingsOpen)) {
       RunEditor();
       SetWindowTitle("YskTANKycklaba - Menu");
     }
@@ -173,32 +215,48 @@ int main() {
     if (DrawImageButton((Rectangle){centerX,
                                     startY + 3 * (buttonHeight + spacing),
                                     buttonWidth, buttonHeight},
-                        btnLeaveImg)) {
+                        btnLeaveImg, !isSettingsOpen)) {
       break;
     }
 
-    // 5. Crédits (En bas à gauche)
+    // 5. Crédits 
     int creditsWidth = 150;
     int creditsHeight = 50;
     int creditsMargin = 20;
     if (DrawImageButton((Rectangle){creditsMargin,
                                     GetScreenHeight() - creditsHeight - creditsMargin,
                                     creditsWidth, creditsHeight},
-                        btnCreditsImg)) {
+                        btnCreditsImg, !isSettingsOpen)) {
       RunCredits();
       SetWindowTitle("YskTANKycklaba - Menu");
+    }
+
+    // 6. Paramètres É
+    int settingsSize = 65; 
+    if (DrawImageButton((Rectangle){GetScreenWidth() - settingsSize - creditsMargin,
+                                    GetScreenHeight() - settingsSize - creditsMargin,
+                                    settingsSize, settingsSize},
+                        btnSettingsImg, !isSettingsOpen)) {
+      isSettingsOpen = true;
+    }
+
+    if (isSettingsOpen) {
+        isSettingsOpen = DrawSettingsPopup(musicMenu);
     }
 
     EndDrawing();
   }
 
   // --- 3. DÉCHARGEMENT DE LA MÉMOIRE ---
+  if (isAnim) UnloadImage(imBackgroundAnim);
   UnloadTexture(background);
   UnloadTexture(btnPlayImg);
   UnloadTexture(btnCreditsImg);
+  UnloadTexture(btnSettingsImg);
   UnloadTexture(btnEditorImg);
   UnloadTexture(btnLeaveImg);
   UnloadTexture(btnStatsImg);
+  UnloadTexture(btnSettingsImg);
   UnloadMusicStream(musicMenu); // Décharger la musique de la RAM
   CloseAudioDevice();       // Fermer le périphérique audio
   CloseWindow();
