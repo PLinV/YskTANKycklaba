@@ -12,4 +12,4 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p, i
 void randomCoordsWithDistance(int *XY, player *p, char *map, int pC, int distanceMinToPlayer, int W, int H);
 void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr, int W, int H);
 void listRem(int projectileIndex, projectileList *pr);
-void RunGame(char *mapPath, int playersCount);
+int RunGame(char *mapPath, int playersCount);

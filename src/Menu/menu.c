@@ -4,6 +4,7 @@
 #include "../statPage/statPage.h"
 #include "../Credits/credits.h"
 #include "GameSetup.h"
+#include "GameOver.h"
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,8 +122,22 @@ int main() {
       int playerCount = 2;
       RunGameSetup(mapPath, &playerCount);
       if (mapPath[0] != '\0') {
-        RunGame(mapPath, playerCount);
+        int winner = RunGame(mapPath, playerCount);
         SetWindowTitle("YskTANKycklaba - Menu");
+        
+        // If we have a valid winner (or draw = -1 but loop finished? wait, my logic returns -1 for early exit too)
+        // Let's assume RunGame returns -1 if aborted, and logic handled in RunGame distinguishes.
+        // Actually I set winner = -1 by default in Game.c.
+        // If I exit with BACKSPACE, winner stays -1.
+        // If I exit with Win, winner becomes ID.
+        // What if it's a draw? 
+        // My checkWin only checks if one is left.
+        
+        // If winner != -1, show game over.
+        if (winner != -1) {
+             RunGameOver(winner);
+             SetWindowTitle("YskTANKycklaba - Menu");
+        }
       }
     }
 
