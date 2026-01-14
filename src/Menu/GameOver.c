@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "../dataCode/user.h"
 
+
 // Helper for button drawing (similar to menu.c but simplified or reused if we move it to a util)
 static bool DrawStyledButton(Rectangle bounds, const char *text) {
   bool pressed = false;
@@ -28,7 +29,7 @@ void RunGameOver(int winnerId, User* users[]) {
     // Determine winner text
     const char* winnerText;
     Color winnerColor;
-    
+
     if (winnerId == -1) {
         winnerText = "MATCH NUL !"; // Draw
         winnerColor = WHITE;

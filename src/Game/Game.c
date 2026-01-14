@@ -6,16 +6,18 @@
 #include <string.h>
 #include <time.h>
 
-void checkWin(bool *exitGame, player *p, int playerCount);
+int currentScore[] = {0, 0, 0, 0};
+
+void checkWin(bool *exitGame, player *p, int playerCount, User* users[]);
 
 void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu,
               float dU, char *map, int *visualMap, int underlayId, int W, int H,
-              bool *exitGame, Texture2D *textureArray) {
+              bool *exitGame, Texture2D *textureArray, User* users[], int currentScore[]) {
   // input and logic
   movePlayers(p, playerCount, map, W, H);
   actions(p, playerCount, pr);
   updateProjectiles(pr, p, playerCount, map, visualMap, underlayId, W, H,
-                    exitGame);
+                    exitGame, users, currentScore);
   powerUps(pu, map, p, playerCount, pr, W, H);
 
   // render
@@ -153,7 +155,8 @@ void movePlayers(player *players, int pC, char *map, int W, int H) {
 }
 
 void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
-                            int pC, char *map, int W, int H, bool *exitGame) {
+                            int pC, char *map, int W, int H, bool *exitGame, 
+                            User* users[], int currentScore[]) {
   for (int j = 0; j < pC; j++) {
     if (p[j].playerId == proj->playerId)
       continue; // skip its own player
@@ -164,11 +167,31 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
                               pla->posY - pla->size / 2.0f, pla->size,
                               pla->size};
     if (CheckCollisionRecs(ProjHitbox, PlayerHitbox)) {
+    // --- DEBUT MODIFICATION STATS ---
+      
+      int attackerID = proj->playerId;
+      int victimID = pla->playerId;
+      // 1. Gestion de l'ATTAQUANT (Celui qui a tiré)
+      if (attackerID >= 0 && attackerID < 4 && users[attackerID] != NULL) {
+          // Incrémenter les kills
+          users[attackerID]->kill += 1;
+          // Ajouter du score pour la touche (ex: +10 points)
+          currentScore[attackerID] += 10;
+          
+          printf("Joueur %s : Kill confirmé ! Score: %d\n", users[attackerID]->username, currentScore[attackerID]);
+      }
+
+      // 2. Gestion de la VICTIME (Celui qui est touché)
+      if (victimID >= 0 && victimID < 4 && users[victimID] != NULL) {
+          // Incrémenter les morts
+          users[victimID]->death += 1;
+      }
+
       // basically kills the player
       if (pla->livesLeft <= 1) {
         pla->livesLeft -= 1;
         pla->posX = 1000000.0f;
-        checkWin(exitGame, p, pC);
+        checkWin(exitGame, p, pC, users);
       } else {
         int randomStartCoord[2] = {0, 0};
         randomCoordsWithDistance(randomStartCoord, p, map, pC, (int)H / 2, W,
@@ -184,7 +207,7 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
 
 void updateProjectiles(projectileList *pr, player *p, int pC, char *map,
                        int *visualMap, int underlayId, int W, int H,
-                       bool *exitGame) {
+                       bool *exitGame, User* users[], int currentScore[]) {
   for (int i = pr->size - 1; i >= 0; i--) {
     projectile *proj = &pr->data[i];
     Rectangle ProjHitbox = {proj->posX - proj->size / 2.0f,
@@ -192,7 +215,7 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map,
                             proj->size};
 
     // check player collisions
-    checkPlayersGettingHit(proj, ProjHitbox, p, pC, map, W, H, exitGame);
+    checkPlayersGettingHit(proj, ProjHitbox, p, pC, map, W, H, exitGame, users, currentScore);
 
     // horizontal movement and collisions
     if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, visualMap,
@@ -485,7 +508,7 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
       pla->powerUp.timer -= 1;
   }
 }
-void checkWin(bool *exitGame, player *p, int playerCount) {
+void checkWin(bool *exitGame, player *p, int playerCount, User* users[]) {
   int count = 0;
   for (int i = 0; i < playerCount; i++) {
     player pla = p[i];
@@ -495,13 +518,29 @@ void checkWin(bool *exitGame, player *p, int playerCount) {
   }
   if (count >= playerCount - 1) {
     *exitGame = true;
+    for (int i = 0; i < playerCount; i++) {
+        // Vérification de sécurité
+        if (users[i] != NULL) {
+            users[i]->gamePlayed++; // On incrémente le nombre de parties jouées
+            
+            // On vérifie le High Score
+            if (currentScore[i] > users[i]->maxScore) {
+                users[i]->maxScore = currentScore[i];
+                printf("Nouveau High Score pour %s : %d !\n", users[i]->username, users[i]->maxScore);
+            }
+            
+            // Important : Sauvegarder le User dans le fichier ici
+            saveUser(users[i]); 
+        }
+    }
+    
   }
 }
 
 int RunGame(char *mapPath, int playersCount, User* users[]) {
 
   SetWindowTitle("YskTANKycklaba - Game");
-
+  for(int k=0; k<4; k++) currentScore[k] = 0;
   srand(time(NULL)); // makes random random either way random isn't random which
                      // is a problem when you want randomness
   // Default map if none provided
@@ -683,7 +722,7 @@ int RunGame(char *mapPath, int playersCount, User* users[]) {
 
     // printf("%d, %d\n",width,height);
     mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, visualMap, underlayId,
-             width, height, &exitGame, textureArray);
+             width, height, &exitGame, textureArray, users, currentScore);
 
     DrawText("Press BACKSPACE to return to Menu", 10, 10, 20, DARKGRAY);
     EndDrawing();
