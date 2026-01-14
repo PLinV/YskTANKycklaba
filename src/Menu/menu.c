@@ -196,6 +196,9 @@ int main() {
   UnloadTexture(background);
   UnloadTexture(btnPlayImg);
   UnloadTexture(btnCreditsImg);
+  UnloadTexture(btnEditorImg);
+  UnloadTexture(btnLeaveImg);
+  UnloadTexture(btnStatsImg);
   UnloadMusicStream(musicMenu); // Décharger la musique de la RAM
   CloseAudioDevice();       // Fermer le périphérique audio
   CloseWindow();
