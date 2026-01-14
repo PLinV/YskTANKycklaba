@@ -4,6 +4,6 @@
 #include "../dataCode/user.h"
 #include <stdbool.h>
 
-int RunStats(void);
+int RunStats(Music musiqueMenu);
 
 #endif

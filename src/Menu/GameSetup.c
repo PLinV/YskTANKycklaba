@@ -146,6 +146,21 @@ void DisplayMap(MapUI *maps, int count, int *mapIndex) {
 }
 
 void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
+
+  Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenuStart.mp3");
+  bool musiqueLoad;
+  // 3. LANCER LA LECTURE
+  if (musicMenu.frameCount > 0) {
+    printf("Musique chargée avec succès !\n");
+    PlayMusicStream(musicMenu);
+    musiqueLoad = true;
+    SetMusicVolume(musicMenu, 0.5f);
+  }
+  else {
+    printf("Echec du chargement de la musique !\n");
+    musiqueLoad = false;
+  }
+
   // --- CHARGEMENT DES RESSOURCES ---
   Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
   Texture2D btnStartImg = LoadTexture("src/Menu/images/bouton_jouer.jpg");
@@ -199,6 +214,11 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
   int nbPartieGagnerJ2 = 0;
 
   while (!WindowShouldClose() && !mapSelected) {
+    
+    if (musiqueLoad) {
+      UpdateMusicStream(musicMenu);
+    }
+    
     // --- INPUT GESTION ---
     if (IsKeyPressed(KEY_BACKSPACE)) {
       if (editingPlayer != -1) {
@@ -364,7 +384,7 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
         
         float screenCenter = GetScreenWidth() / 2.0f;
         float rectX = screenCenter - rectW / 2.0f;
-        float rectY = 40; // Position Y
+        float rectY = 50; // Position Y
 
         // Draw styled box
         DrawRectangle(rectX, rectY, rectW, rectH, Fade(BLACK, 0.6f));

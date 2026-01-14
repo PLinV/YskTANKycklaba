@@ -28,7 +28,7 @@
     }
 
 
-    int RunStats(void){
+    int RunStats(Music musicMenu){
       SetTargetFPS(60);
 
       Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
@@ -63,6 +63,8 @@
 
 
       while (!WindowShouldClose()) {
+        
+        UpdateMusicStream(musicMenu);
 
         // input Users 
         inputBox1.x = GetScreenWidth() / 4 - (inputBox1.width / 2);

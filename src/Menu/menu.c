@@ -39,20 +39,28 @@ bool DrawImageButton(Rectangle bounds, Texture2D texture) {
   return pressed;
 }
 
+
 int main() {
   InitWindow(1000, 640, "YskTANKycklaba - Menu");
   SetTargetFPS(60);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
+
   // 1. INITIALISER LE PÉRIPHÉRIQUE AUDIO
   InitAudioDevice();
   // 2. CHARGER LA MUSIQUE
-  // Formats supportés : .mp3, .ogg, .wav, .flac
-  Music music = LoadMusicStream("src/Menu/musique/tank-battle-13719.wav");
-  // Dans la boucle while, après BeginDrawing() :
-
+  Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenu.mp3");
+  bool musiqueLoad;
   // 3. LANCER LA LECTURE
-  PlayMusicStream(music);
-  SetMusicVolume(music, 0.5f);
+  if (musicMenu.frameCount > 0) {
+    printf("Musique chargée avec succès !\n");
+    PlayMusicStream(musicMenu);
+    musiqueLoad = true;
+    SetMusicVolume(musicMenu, 0.5f);
+  }
+  else {
+    printf("Echec du chargement de la musique !\n");
+    musiqueLoad = false;
+  }
 
   Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
   // TEST POUR VOIR SI L'IMAGE CHARGE BIEN
@@ -87,7 +95,10 @@ int main() {
 
   // --- 2. BOUCLE PRINCIPALE ---
   while (!WindowShouldClose()) {
-    UpdateMusicStream(music);
+    
+    if (musiqueLoad) {
+      UpdateMusicStream(musicMenu);
+    }
 
     BeginDrawing();
     ClearBackground(RAYWHITE);
@@ -145,7 +156,7 @@ int main() {
     if (DrawImageButton((Rectangle){centerX, startY + buttonHeight + spacing,
                                     buttonWidth, buttonHeight},
                         btnStatsImg)) {
-      RunStats();
+      RunStats(musicMenu);
       SetWindowTitle("YskTANKycklaba - Menu");
     }
 
@@ -185,7 +196,7 @@ int main() {
   UnloadTexture(background);
   UnloadTexture(btnPlayImg);
   UnloadTexture(btnCreditsImg);
-  UnloadMusicStream(music); // Décharger la musique de la RAM
+  UnloadMusicStream(musicMenu); // Décharger la musique de la RAM
   CloseAudioDevice();       // Fermer le périphérique audio
   CloseWindow();
   return 0;
