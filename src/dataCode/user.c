@@ -178,10 +178,10 @@ void incrementDeath(User *u) { u->death++; }
 
 void incrementKill(User *u) { u->kill++; }
 
-// save les deux users dans le txt
-int saveUsers(User *u1, User *u2) {
+// save l'user dans le txt
+int saveUser(User *u1) {
   FILE *file = fopen(USER_DATA_FILE, "r");
-  char *tempFile = "YskTANKycklaba/data/users.tmp";
+  char *tempFile = "data/users.tmp";
   FILE *temp = fopen(tempFile, "w");
   if (!temp) {
     printf("Erreur : impossible d'écrire le fichier temporaire.\n");
@@ -194,7 +194,6 @@ int saveUsers(User *u1, User *u2) {
   }
 
   int u1Written = 0;
-  int u2Written = 0;
   char originalLine[256];
 
   char line[256];
@@ -210,10 +209,6 @@ int saveUsers(User *u1, User *u2) {
       fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore,
               u1->gamePlayed, u1->kill, u1->death);
       u1Written = 1;
-    } else if (strcmp(token, u2->username) == 0) {
-      fprintf(temp, "%s;%d;%d;%d;%d\n", u2->username, u2->maxScore,
-              u2->gamePlayed, u2->kill, u2->death);
-      u2Written = 1;
     } else {
       fputs(originalLine, temp);
       fprintf(temp, "\n");
@@ -224,10 +219,6 @@ int saveUsers(User *u1, User *u2) {
   if (!u1Written)
     fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore,
             u1->gamePlayed, u1->kill, u1->death);
-
-  if (!u2Written)
-    fprintf(temp, "%s;%d;%d;%d;%d\n", u2->username, u2->maxScore,
-            u2->gamePlayed, u2->kill, u2->death);
 
   fclose(file);
   fclose(temp);

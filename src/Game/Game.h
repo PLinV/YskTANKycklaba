@@ -19,4 +19,4 @@ void randomCoordsWithDistance(int *XY, player *p, char *map, int pC,
 void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
               int W, int H);
 void listRem(int projectileIndex, projectileList *pr);
-int RunGame(char *mapPath, int playersCount);
+int RunGame(char *mapPath, int playersCount, User* users[]);

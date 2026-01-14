@@ -1,6 +1,7 @@
 #include "GameOver.h"
 #include <raylib.h>
 #include <stdio.h>
+#include "../dataCode/user.h"
 
 // Helper for button drawing (similar to menu.c but simplified or reused if we move it to a util)
 static bool DrawStyledButton(Rectangle bounds, const char *text) {
@@ -23,7 +24,7 @@ static bool DrawStyledButton(Rectangle bounds, const char *text) {
   return pressed;
 }
 
-void RunGameOver(int winnerId) {
+void RunGameOver(int winnerId, User* users[]) {
     // Determine winner text
     const char* winnerText;
     Color winnerColor;

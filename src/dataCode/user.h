@@ -40,7 +40,7 @@ void incrementKill(User *u);
 float getKdRatio(User *u);
 
 // écrit toutes les structs User en mémoire dans le fichier
-int saveUsers(User *u1, User *u2);
+int saveUser(User *u1);
 
 // Récupère une liste de tous les pseudos existants
 int GetAllUsers(char ***usernames);
