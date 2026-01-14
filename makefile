@@ -23,7 +23,8 @@ SRC_GAME = src/statPage/statPage.c \
            src/Menu/GameSetup.c \
            src/Game/Game.c \
            src/Game/render.c \
-           src/Graphisme/graphisme.c
+           src/Graphisme/graphisme.c \
+           src/Menu/GameOver.c
 
 # Transformation automatique .c -> .o
 OBJ_GAME = $(SRC_GAME:.c=.o)

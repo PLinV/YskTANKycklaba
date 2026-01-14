@@ -491,7 +491,7 @@ void checkWin(bool *exitGame, player *p, int playerCount)
     }
 }
 
-void RunGame(char *mapPath, int playersCount)
+int RunGame(char *mapPath, int playersCount)
 {
 
     SetWindowTitle("YskTANKycklaba - Game");
@@ -507,7 +507,7 @@ void RunGame(char *mapPath, int playersCount)
     if (!text)
     {
         TraceLog(LOG_ERROR, "Failed to load map: %s", mapPath);
-        return;
+        return -1;
     }
     int width = 0, height = 0;
     int nbSpawnP1 = 0, nbSpawnP2 = 0;
@@ -520,7 +520,7 @@ void RunGame(char *mapPath, int playersCount)
     {
         TraceLog(LOG_ERROR, "Invalid map format: %s", mapPath);
         UnloadFileText(text);
-        return;
+        return -1;
     }
     printf("%s\n", text);
     // Parse collision map and collect spawns
@@ -584,7 +584,7 @@ void RunGame(char *mapPath, int playersCount)
     if (!p)
     {
         printf("malloc failed\n");
-        return;
+        return -1;
     }
     // detecting gamepads
     int detectedPadIndices[4];
@@ -684,4 +684,37 @@ void RunGame(char *mapPath, int playersCount)
 
     if (bgTexture.id != 0)
         UnloadTexture(bgTexture);
+    
+    // Find winner
+    // If exitGame is true, we check who is alive
+    // If exitGame was triggered by BACKSPACE, determine if we should return -1 or winner
+    // If livesLeft <= 0 count >= playerCount - 1, then we have a winner
+    int winner = -1;
+    int aliveCount = 0;
+    int lastAliveID = -1;
+    
+    // Check if game ended naturally
+    if (exitGame) {
+        // If backspace was pressed, we might not want to show game over? 
+        // Logic: if backspace pressed (exitGame=true) but game not finished?
+        // Actually mainLoop updates exitGame when game ends.
+        // We need to know if backspace was pressed.
+        // Let's re-check the loop condition.
+        // If IsKeyPressed(KEY_BACKSPACE) was true, then return -1 (Menu)
+        // If game ended by checkWin, return winner.
+        
+        // Simpler approach: check lives.
+        for(int k=0; k<playersCount; k++) {
+            if (p != NULL && p[k].livesLeft > 0) {
+                aliveCount++;
+                lastAliveID = p[k].playerId;
+            }
+        }
+        
+        if (aliveCount <= 1) { 
+             winner = lastAliveID; 
+        }
+    }
+    
+    return winner;
 }
