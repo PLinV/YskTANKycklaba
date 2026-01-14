@@ -56,7 +56,7 @@ int whoWin(HistoricalGame* game, int winner) {
   return EXIT_SUCCESS;
 }
 
-void J1vsJ2Score(HistoricalGame* gamen, int* nbPartieGagnerJ1, int* nbPartieGagnerJ2) {
+void J1vsJ2Score(HistoricalGame* game, int* nbPartieGagnerJ1, int* nbPartieGagnerJ2) {
   // 1. Initialisation des compteurs à 0 par sécurité
   if (nbPartieGagnerJ1) *nbPartieGagnerJ1 = 0;
   if (nbPartieGagnerJ2) *nbPartieGagnerJ2 = 0;
@@ -114,16 +114,17 @@ void J1vsJ2Score(HistoricalGame* gamen, int* nbPartieGagnerJ1, int* nbPartieGagn
       // CONDITION 2 : Identifier les joueurs et compter les points
       
       // CAS A : Le fichier est dans l'ordre (J1 vs J2)
-      if (strcasecmp(u1, gamen->username1) == 0 && strcasecmp(u2, gamen->username2) == 0) {
+      if (strcasecmp(u1, game->username1) == 0 && strcasecmp(u2, game->username2) == 0) {
         if (winner == 1) (*nbPartieGagnerJ1)++;
         if (winner == 2) (*nbPartieGagnerJ2)++;
       }
       // CAS B : Le fichier est inversé (J2 vs J1)
-      else if (strcasecmp(u1, gamen->username2) == 0 && strcasecmp(u2, gamen->username1) == 0) {
+      else if (strcasecmp(u1, game->username2) == 0 && strcasecmp(u2, game->username1) == 0) {
         // Si u1 (qui est J2 ici) a gagné (winner=1), alors J2 gagne
         if (winner == 1) (*nbPartieGagnerJ2)++; 
         // Si u2 (qui est J1 ici) a gagné (winner=2), alors J1 gagne
         if (winner == 2) (*nbPartieGagnerJ1)++;
+      
       }
     }
   }
@@ -179,6 +180,7 @@ int saveGame(HistoricalGame* game) {
   return 1;
 }
 
+/*
 int main(){
   HistoricalGame* currentGame = createHistoricalGame("Paulin", "Hatem", "NULL", "NULL");
   incrementScore(currentGame, 1, 60);
@@ -194,3 +196,4 @@ int main(){
   printf("Après sauvegarde : J1 a gagné %d parties, J2 a gagné %d parties\n", nbPartieGagnerJ1, nbPartieGagnerJ2);
   return 0; 
 }
+*/

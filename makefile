@@ -18,6 +18,7 @@ SRC_GAME = src/statPage/statPage.c \
            src/Credits/credits.c \
            src/statPage/input_box.c \
            src/dataCode/user.c \
+           src/dataCode/historicalGame.c \
            src/Menu/menu.c \
            src/Menu/GameSetup.c \
            src/Game/Game.c \

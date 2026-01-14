@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../dataCode/user.h"
+#include "../dataCode/historicalGame.h"
+
 
 // --- NOUVELLE FONCTION POUR LE BOUTON IMAGE ---
 bool DrawImageButton(Rectangle bounds, Texture2D texture) {
