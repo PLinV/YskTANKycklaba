@@ -2,12 +2,13 @@
 #include "../dataCode/user.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h> // for free? no, LoadDirectoryFiles uses Raylib allocator
+#include <stdlib.h>
 
 typedef struct {
   char pseudo[16];
   int skinID; // 0=BLUE, 1=RED, 2=GREEN, 3=ORANGE
   Rectangle bounds;
+  bool isEditing;
 } PlayerConfig;
 
 // Structure to hold pre-loaded map info
@@ -20,122 +21,132 @@ typedef struct {
 
 // Initialize defaults
 PlayerConfig setupJoueurs[4] = {
-    {"J1", 0, {0}}, {"J2", 0, {0}}, {"J3", 0, {0}}, {"J4", 0, {0}}};
+    {"J1", 0, {0}, false}, {"J2", 0, {0}, false}, {"J3", 0, {0}, false}, {"J4", 0, {0}, false}};
 int totalPlayers = 2; // Par défaut
 
-bool DrawButton(Rectangle bounds, const char *text) {
+// --- FONCTION BOUTON IMAGE (Inspirée de menu.c) ---
+static bool DrawImageButton(Rectangle bounds, Texture2D texture) {
   bool pressed = false;
   Vector2 mousePoint = GetMousePosition();
   bool isHover = CheckCollisionPointRec(mousePoint, bounds);
 
-  if (isHover) {
-    DrawRectangleRec(bounds, LIGHTGRAY);
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-      pressed = true;
-    }
-  } else {
-    DrawRectangleRec(bounds, RAYWHITE);
+  Color tint = isHover ? LIGHTGRAY : WHITE;
+
+  if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    pressed = true;
   }
 
-  DrawRectangleLinesEx(bounds, 2, DARKGRAY);
+  DrawTexturePro(texture,
+                 (Rectangle){0, 0, (float)texture.width, (float)texture.height},
+                 bounds, (Vector2){0, 0}, 0.0f, tint);
 
-  // Center text
-  int textWidth = MeasureText(text, 20);
+  return pressed;
+}
+
+// Custom text button for smaller UI elements
+static bool DrawStyledButton(Rectangle bounds, const char *text, bool active) {
+  bool pressed = false;
+  Vector2 mousePoint = GetMousePosition();
+
+  bool isHover = CheckCollisionPointRec(mousePoint, bounds);
+
+  Color baseColor = active ? GOLD : Fade(BLACK, 0.5f);
+  if (isHover && !active) baseColor = Fade(GOLD, 0.5f);
+  
+  DrawRectangleRec(bounds, baseColor);
+  DrawRectangleLinesEx(bounds, 2, active ? ORANGE : DARKGRAY);
+
+  int fontSize = 20;
+  int textWidth = MeasureText(text, fontSize);
+  Color textColor = active ? BLACK : WHITE;
+  
   DrawText(text, bounds.x + (bounds.width - textWidth) / 2,
-           bounds.y + (bounds.height - 20) / 2, 20, DARKGRAY);
+           bounds.y + (bounds.height - fontSize) / 2, fontSize, textColor);
 
+  if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    pressed = true;
+  }
   return pressed;
 }
 
 // 3D Cyclic Carousel Logic
 void DisplayMap(MapUI *maps, int count, int *mapIndex) {
-  if (count == 0)
-    return;
+  if (count == 0) return;
 
   // Navigation (Cyclic)
-  if (IsKeyPressed(KEY_RIGHT))
-    *mapIndex = (*mapIndex + 1) % count;
-  if (IsKeyPressed(KEY_LEFT))
-    *mapIndex = (*mapIndex - 1 + count) % count;
+  if (IsKeyPressed(KEY_RIGHT)) *mapIndex = (*mapIndex + 1) % count;
+  if (IsKeyPressed(KEY_LEFT)) *mapIndex = (*mapIndex - 1 + count) % count;
 
-  DrawText("Choisir une map:",
-           GetScreenWidth() / 2 - MeasureText("Choisir une map:", 20) / 2,
-           GetScreenHeight() * 0.60, 20, DARKGRAY);
+  // Center Position for Carousel
+  float centerX = GetScreenWidth() / 2;
+  float centerY = GetScreenHeight() * 0.72; // Slightly higher to leave room for button
+
+  DrawText("CHOISIR UNE MAP", centerX - MeasureText("CHOISIR UNE MAP", 30) / 2, centerY - 160, 30, WHITE);
 
   int current = *mapIndex;
   int prev = (current - 1 + count) % count;
   int next = (current + 1) % count;
 
-  // CAROUSEL
-  float centerX = GetScreenWidth() / 2;
-  float centerY = GetScreenHeight() * 0.75;
-
-  // Size relative to screen
-  float minDimension = (GetScreenWidth() < GetScreenHeight())
-                           ? GetScreenWidth()
-                           : GetScreenHeight();
-  float size = minDimension * 0.25;
+  float size = 180; // Fixed size for consistency
   float x = centerX - size / 2;
   float y = centerY - size / 2;
 
   // CURRENT
-  int aimTextWidth = MeasureText(maps[current].name, 20);
-  DrawText(maps[current].name, x + size / 2 - aimTextWidth / 2, y - 30, 20,
-           DARKGRAY);
+  int aimTextWidth = MeasureText(maps[current].name, 24);
+  DrawText(maps[current].name, centerX - aimTextWidth / 2, y - 40, 24, GOLD);
+  
+  // Border for current map
   DrawRectangle(x - 5, y - 5, size + 10, size + 10, GOLD);
-  DrawRectangle(x, y, size, size, RAYWHITE);
+  DrawRectangle(x, y, size, size, BLACK);
 
   if (maps[current].hasTexture) {
     DrawTexturePro(maps[current].texture,
-                   (Rectangle){0, 0, maps[current].texture.width,
-                               maps[current].texture.height},
+                   (Rectangle){0, 0, maps[current].texture.width, maps[current].texture.height},
                    (Rectangle){x, y, size, size}, (Vector2){0, 0}, 0.0f, WHITE);
   } else {
-    DrawText("No Image", x + size * 0.3, y + size / 2, 20, LIGHTGRAY);
+    DrawText("No Image", x + size * 0.3, y + size / 2, 20, GRAY);
   }
 
-  // PREVIOUS
+  // Draw arrows for visual clue
+  DrawText("<", x - 60, y + size/2 - 20, 40, WHITE);
+  DrawText(">", x + size + 40, y + size/2 - 20, 40, WHITE);
+
+  // PREVIOUS (Smaller and darker)
   if (count > 1) {
-    float sideSize = size * 0.66;
-    float gap = size * 0.2;
+    float sideSize = size * 0.7;
+    float gap = 60;
     float sideX = x - gap - sideSize;
     float sideY = centerY - sideSize / 2;
 
-    int w = MeasureText(maps[prev].name, 20);
-    DrawText(maps[prev].name, sideX + sideSize / 2 - w / 2, sideY - 30, 20,
-             DARKGRAY);
-    DrawRectangle(sideX, sideY, sideSize, sideSize, LIGHTGRAY);
+    DrawRectangle(sideX, sideY, sideSize, sideSize, Fade(BLACK, 0.5f));
     if (maps[prev].hasTexture) {
-      DrawTexturePro(maps[prev].texture,
-                     (Rectangle){0, 0, maps[prev].texture.width,
-                                 maps[prev].texture.height},
-                     (Rectangle){sideX, sideY, sideSize, sideSize},
-                     (Vector2){0, 0}, 0.0f, WHITE);
+        DrawTexturePro(maps[prev].texture,
+                 (Rectangle){0, 0, maps[prev].texture.width, maps[prev].texture.height},
+                 (Rectangle){sideX, sideY, sideSize, sideSize}, (Vector2){0, 0}, 0.0f, Fade(WHITE, 0.5f));
     }
   }
 
-  // NEXT
+  // NEXT (Smaller and darker)
   if (count > 1) {
-    float sideSize = size * 0.66;
-    float gap = size * 0.2;
+    float sideSize = size * 0.7;
+    float gap = 60;
     float sideX = x + size + gap;
     float sideY = centerY - sideSize / 2;
 
-    int w = MeasureText(maps[next].name, 20);
-    DrawText(maps[next].name, sideX + sideSize / 2 - w / 2, sideY - 30, 20,
-             DARKGRAY);
-    DrawRectangle(sideX, sideY, sideSize, sideSize, LIGHTGRAY);
+    DrawRectangle(sideX, sideY, sideSize, sideSize, Fade(BLACK, 0.5f));
     if (maps[next].hasTexture) {
-      DrawTexturePro(maps[next].texture,
-                     (Rectangle){0, 0, maps[next].texture.width,
-                                 maps[next].texture.height},
-                     (Rectangle){sideX, sideY, sideSize, sideSize},
-                     (Vector2){0, 0}, 0.0f, WHITE);
+        DrawTexturePro(maps[next].texture,
+                 (Rectangle){0, 0, maps[next].texture.width, maps[next].texture.height},
+                 (Rectangle){sideX, sideY, sideSize, sideSize}, (Vector2){0, 0}, 0.0f, Fade(WHITE, 0.5f));
     }
   }
 }
 
 void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
+  // --- CHARGEMENT DES RESSOURCES ---
+  Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
+  Texture2D btnStartImg = LoadTexture("src/Menu/images/bouton_jouer.jpg");
+
   FilePathList files = LoadDirectoryFiles("src/Graphisme/Maps");
 
   int editingPlayer = -1;
@@ -143,7 +154,6 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
   // Autocomplete Data
   char **allUsernames = NULL;
   int userCount = GetAllUsers(&allUsernames);
-  // We need a list to store current matching results
   int maxMatches = 10;
   char **matches = malloc(maxMatches * sizeof(char *));
   int matchCount = 0;
@@ -151,55 +161,46 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
   int mapIndex = 0;
   bool mapSelected = false;
 
-  // Load Map Headers and Textures
+  // Load Maps
   int mapCount = 0;
-  // First count .txt files
   for (int i = 0; i < (int)files.count; i++) {
-    if (IsFileExtension(files.paths[i], ".txt"))
-      mapCount++;
+    if (IsFileExtension(files.paths[i], ".txt")) mapCount++;
   }
 
   MapUI *maps = malloc(mapCount * sizeof(MapUI));
   int currentIdx = 0;
-
   for (int i = 0; i < (int)files.count; i++) {
     if (IsFileExtension(files.paths[i], ".txt")) {
       strcpy(maps[currentIdx].path, files.paths[i]);
-      const char *name = GetFileNameWithoutExt(files.paths[i]);
-      strcpy(maps[currentIdx].name, name);
-
-      // Try load texture .png
+      strcpy(maps[currentIdx].name, GetFileNameWithoutExt(files.paths[i]));
+      
       char imgPath[512];
       strcpy(imgPath, files.paths[i]);
-      // Replace .txt with .png
       char *ext = strrchr(imgPath, '.');
-      if (ext)
-        strcpy(ext, ".png");
+      if (ext) strcpy(ext, ".png");
 
       if (FileExists(imgPath)) {
         maps[currentIdx].texture = LoadTexture(imgPath);
         maps[currentIdx].hasTexture = true;
-      } else
+      } else {
         maps[currentIdx].hasTexture = false;
+      }
       currentIdx++;
     }
   }
 
   while (!WindowShouldClose() && !mapSelected) {
-    // --- LOGIQUE ---
+    // --- INPUT GESTION ---
     if (IsKeyPressed(KEY_BACKSPACE)) {
       if (editingPlayer != -1) {
         int len = strlen(setupJoueurs[editingPlayer].pseudo);
-        if (len > 0)
-          setupJoueurs[editingPlayer].pseudo[len - 1] = '\0';
+        if (len > 0) setupJoueurs[editingPlayer].pseudo[len - 1] = '\0';
       } else {
-        // Only exit if not editing
         selectedMapPath[0] = '\0';
         break;
       }
     }
 
-    // Input Handling for Pseudo
     if (editingPlayer != -1) {
       int key = GetCharPressed();
       while (key > 0) {
@@ -210,227 +211,202 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount) {
         }
         key = GetCharPressed();
       }
-
-      // Update Matches
+      
+      // Update autocomplete
       matchCount = 0;
       char *current = setupJoueurs[editingPlayer].pseudo;
       int currentLen = strlen(current);
       if (currentLen > 0) {
         for (int u = 0; u < userCount && matchCount < maxMatches; u++) {
-          if (strncmp(allUsernames[u], current, currentLen) == 0) {
-            matches[matchCount++] = allUsernames[u];
-          }
+          if (strncmp(allUsernames[u], current, currentLen) == 0) matches[matchCount++] = allUsernames[u];
         }
       } else {
-        // Show first 10 if empty
-        for (int u = 0; u < userCount && matchCount < maxMatches; u++) {
-          matches[matchCount++] = allUsernames[u];
-        }
+         for (int u = 0; u < userCount && matchCount < maxMatches; u++) matches[matchCount++] = allUsernames[u];
       }
     } else {
-      // Clear matches if not editing
       matchCount = 0;
     }
 
-    // Mouse click outside to stop editing
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && editingPlayer != -1) {
-      // Check if we clicked on a match handled in drawing, else close
-      // Simple logic: we'll check collision in drawing loop.
-      // If not clicked on valid UI, reset.
-      // Doing this check at end of drawing might be better or flag consumption.
-      // For now, let's assume if we click a new box, it changes.
+       // Logic to close edit mode is handled in drawing if not clicked on interaction
     }
 
     // --- DESSIN ---
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
 
-    // Draw Background (White/Gray as requested by removal of image)
-    // if (setupBackground.id != 0) { ... } REMOVED
+    // 1. BACKGROUND
+    DrawTexturePro(background,
+        (Rectangle){0, 0, background.width, background.height},
+        (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+        (Vector2){0, 0}, 0.0f, WHITE);
 
-    DrawText("CONFIGURATION DE LA PARTIE", 10, 10, 20, DARKGRAY);
+    // Overlay sombre pour lisibilité
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.4f));
 
-    // 1. CHOIX DU NOMBRE DE JOUEURS (En haut)
-    DrawText("Nombre de joueurs :", 350, 40, 20, BLACK);
+    DrawText("CONFIGURATION DE LA PARTIE", 20, 20, 40, GOLD);
+
+    // 2. NOMBRE DE JOUEURS
+    int startY = 80;
+    DrawText("NOMBRE DE JOUEURS :", 40, startY, 24, WHITE);
     for (int i = 2; i <= 4; i++) {
-      Rectangle r = {550 + (i - 2) * 40, 35, 30, 30};
-      if (CheckCollisionPointRec(GetMousePosition(), r) &&
-          IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        totalPlayers = i;
-      DrawRectangleRec(r, (totalPlayers == i) ? SKYBLUE : LIGHTGRAY);
-      DrawText(TextFormat("%d", i), r.x + 10, r.y + 5, 20, BLACK);
+        Rectangle r = {300 + (i - 2) * 60, startY - 5, 50, 40};
+        if (DrawStyledButton(r, TextFormat("%d", i), (totalPlayers == i))) {
+            totalPlayers = i;
+        }
     }
 
-    // 2. ZONE JOUEURS (Pseudos et Skins)
+    // 3. ZONE CONFIGURATION JOUEURS
+    // Panel semi-transparent
+    int panelY = 140;
+    int panelHeight = 240;
+    DrawRectangle(0, panelY, GetScreenWidth(), panelHeight, Fade(BLACK, 0.6f));
+    DrawLine(0, panelY, GetScreenWidth(), panelY, GOLD);
+    DrawLine(0, panelY + panelHeight, GetScreenWidth(), panelY + panelHeight, GOLD);
+
     float sectorWidth = (float)GetScreenWidth() / totalPlayers;
+    
+    // Track if we clicked anywhere in UI this frame
+    bool clickedInUI = false;
+
     for (int i = 0; i < totalPlayers; i++) {
       float startX = i * sectorWidth;
+      float centerX = startX + sectorWidth / 2;
 
-      // Ligne de séparation
-      if (i > 0)
-        DrawLine(startX, 80, startX, 280, LIGHTGRAY);
+      // Séparateur vertical
+      if (i > 0) DrawLine(startX, panelY + 10, startX, panelY + panelHeight - 10, GRAY);
 
-      // Pseudo
-      DrawText(TextFormat("Pseudo J%d:", i + 1), startX + 20, 100, 18,
-               DARKGRAY);
-      Rectangle pseudoRect = {startX + 20, 125, 150, 30};
+      // Titre JOUEUR
+      DrawText(TextFormat("JOUEUR %d", i + 1), centerX - MeasureText(TextFormat("JOUEUR %d", i+1), 20)/2, panelY + 20, 20, GOLD);
 
-      if (CheckCollisionPointRec(GetMousePosition(), pseudoRect) &&
-          IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      // Saisie Pseudo
+      Rectangle pseudoRect = {centerX - 80, panelY + 50, 160, 30};
+      
+      bool isHover = CheckCollisionPointRec(GetMousePosition(), pseudoRect);
+      if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         editingPlayer = i;
+        clickedInUI = true;
       }
 
-      DrawRectangleRec(pseudoRect, (editingPlayer == i) ? SKYBLUE : LIGHTGRAY);
-      DrawText(setupJoueurs[i].pseudo, pseudoRect.x + 5, pseudoRect.y + 5, 18,
-               BLACK);
+      Color boxColor = (editingPlayer == i) ? WHITE : LIGHTGRAY;
+      DrawRectangleRec(pseudoRect, boxColor);
+      DrawRectangleLinesEx(pseudoRect, 2, (editingPlayer == i) ? GOLD : DARKGRAY);
+      
+      DrawText(setupJoueurs[i].pseudo, pseudoRect.x + 5, pseudoRect.y + 5, 20, BLACK);
+      if (setupJoueurs[i].pseudo[0] == '\0' && editingPlayer != i) {
+         DrawText("Pseudo...", pseudoRect.x + 5, pseudoRect.y + 5, 20, Fade(GRAY, 0.8f));
+      }
 
-      // AUTOCOMPLETE LIST
+      // Autocomplete list drawing (Overlay)
       if (editingPlayer == i) {
-        float listY = pseudoRect.y + pseudoRect.height;
-        for (int m = 0; m < matchCount; m++) {
-          Rectangle matchRect = {pseudoRect.x, listY + (m * 25),
-                                 pseudoRect.width, 25};
-          DrawRectangleRec(matchRect, SKYBLUE);
-          DrawRectangleLinesEx(matchRect, 1, DARKBLUE);
-          DrawText(matches[m], matchRect.x + 5, matchRect.y + 5, 15, BLACK);
+          float listY = pseudoRect.y + pseudoRect.height;
+          float listHeight = matchCount * 30.0f;
+          if (listHeight > 0) {
+              DrawRectangle(pseudoRect.x, listY, pseudoRect.width + 120, listHeight + 10, Fade(BLACK, 0.9f));
+              DrawRectangleLines(pseudoRect.x, listY, pseudoRect.width + 120, listHeight + 10, GOLD);
+          }
 
-          if (CheckCollisionPointRec(GetMousePosition(), matchRect) &&
-              IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            strcpy(setupJoueurs[i].pseudo, matches[m]);
-            editingPlayer = -1; // Stop editing
-          }
-        }
+          for(int m=0; m<matchCount; m++){
+             Rectangle matchRect = {pseudoRect.x, listY + m*30, pseudoRect.width + 120, 30};
+             bool hoverMatch = CheckCollisionPointRec(GetMousePosition(), matchRect);
+             if(hoverMatch) DrawRectangleRec(matchRect, Fade(GOLD, 0.3f));
+             
+             DrawText(matches[m], matchRect.x + 5, matchRect.y + 5, 20, WHITE);
 
-        // Button to create/confirm if not in list
-        // Logic: If user typed something that isn't exactly a match (or just
-        // wants to confirm new) We show a small specific button to
-        // valid/create? User asked: "si c'est un nouveau pseudo on affiche sur
-        // la droite de la case d'input un bouton pour confirmer" We check if
-        // current pseudo exists in matches
-        bool exists = false;
-        for (int u = 0; u < userCount; u++) {
-          if (strcmp(allUsernames[u], setupJoueurs[i].pseudo) == 0) {
-            exists = true;
-            break;
+             if(hoverMatch && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                 strcpy(setupJoueurs[i].pseudo, matches[m]);
+                 editingPlayer = -1;
+                 clickedInUI = true;
+             }
           }
-        }
-        if (!exists && strlen(setupJoueurs[i].pseudo) > 0) {
-          Rectangle createBtn = {pseudoRect.x + pseudoRect.width + 10,
-                                 pseudoRect.y, 80, 30};
-          if (DrawButton(createBtn, "Créer")) {
-            // Create user logic -> getOrCreateUser does it.
-            editingPlayer = -1;
-          }
-        }
+          
+           // Check existing for Create logic
+           bool exists = false;
+           for(int u=0; u<userCount; u++) {
+               if(strcmp(allUsernames[u], setupJoueurs[i].pseudo) == 0) { exists = true; break; }
+           }
+           if (!exists && strlen(setupJoueurs[i].pseudo) > 0) {
+               Rectangle createBtn = {pseudoRect.x + pseudoRect.width + 5, pseudoRect.y, 60, 30};
+               if (DrawStyledButton(createBtn, "Créer", false)) {
+                   // Logic placeholder for create
+                   editingPlayer = -1;
+                   clickedInUI = true;
+               }
+           }
       }
 
-      // BACKGROUND FOR LIST (Fix for "mélange les pseudos")
-      if (editingPlayer == i) {
-        // Draw a background behind the list to hide underlying UI
-        float listY = pseudoRect.y + pseudoRect.height;
-        // Calculate total height of list
-        float listHeight = matchCount * 25.0f;
-        if (listHeight > 0) {
-          DrawRectangle(pseudoRect.x, listY, pseudoRect.width + 100,
-                        listHeight + 10, SKYBLUE);
-        }
-
-        for (int m = 0; m < matchCount; m++) {
-          Rectangle matchRect = {pseudoRect.x, listY + (m * 25),
-                                 pseudoRect.width, 25};
-          DrawRectangleRec(matchRect, SKYBLUE);
-          DrawRectangleLinesEx(matchRect, 1, DARKBLUE);
-          DrawText(matches[m], matchRect.x + 5, matchRect.y + 5, 15, BLACK);
-
-          if (CheckCollisionPointRec(GetMousePosition(), matchRect) &&
-              IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            strcpy(setupJoueurs[i].pseudo, matches[m]);
-            editingPlayer = -1; // Stop editing
-          }
-        }
-      }
-
-      // Couleur (Classic logic updated label)
-      DrawText(TextFormat("Couleur J%d:", i + 1), startX + 20, 170, 18,
-               DARKGRAY);
-
-      // Map valid skinIDs to Colors correctly
-      // Ensure skinID stays in 0-3 range
-      if (setupJoueurs[i].skinID < 0)
-        setupJoueurs[i].skinID = 3;
-      if (setupJoueurs[i].skinID > 3)
-        setupJoueurs[i].skinID = 0;
-
+      // Sélection Skin
+      DrawText("SKIN", centerX - MeasureText("SKIN", 18)/2, panelY + 100, 18, LIGHTGRAY);
+      
+      // Color definition
+      if (setupJoueurs[i].skinID < 0) setupJoueurs[i].skinID = 3;
+      if (setupJoueurs[i].skinID > 3) setupJoueurs[i].skinID = 0;
+      
       Color skinColor;
       switch (setupJoueurs[i].skinID) {
-      case 0:
-        skinColor = BLUE;
-        break;
-      case 1:
-        skinColor = RED;
-        break;
-      case 2:
-        skinColor = GREEN;
-        break;
-      case 3:
-        skinColor = ORANGE;
-        break;
-      default:
-        skinColor = BLACK;
-        break;
+        case 0: skinColor = BLUE; break;
+        case 1: skinColor = RED; break;
+        case 2: skinColor = GREEN; break;
+        case 3: skinColor = ORANGE; break;
+        default: skinColor = BLACK; break;
       }
+      
+      DrawCircle(centerX, panelY + 150, 30, skinColor);
+      DrawCircleLines(centerX, panelY + 150, 32, GOLD); // Gold border for tank look
 
-      DrawCircle(startX + sectorWidth / 2, 220, 25, skinColor);
-
-      // Flèches pour changer de skin (Logique basique)
-      if (DrawButton((Rectangle){startX + sectorWidth / 2 - 60, 210, 20, 20},
-                     "<"))
-        setupJoueurs[i].skinID--;
-      if (DrawButton((Rectangle){startX + sectorWidth / 2 + 40, 210, 20, 20},
-                     ">"))
-        setupJoueurs[i].skinID++;
+      // Arrows
+      Rectangle leftArrow = {centerX - 60, panelY + 140, 30, 30};
+      Rectangle rightArrow = {centerX + 30, panelY + 140, 30, 30};
+      
+      if (DrawStyledButton(leftArrow, "<", false)) {
+          setupJoueurs[i].skinID--;
+          clickedInUI = true;
+      }
+      if (DrawStyledButton(rightArrow, ">", false)) {
+          setupJoueurs[i].skinID++;
+          clickedInUI = true;
+      }
+    }
+    
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !clickedInUI && editingPlayer != -1) {
+        editingPlayer = -1; // Close editing if clicked elsewhere
     }
 
-    DisplayMap(maps, mapCount, &mapIndex); // Use new display function
+    // 4. DISPLAY MAP CAROUSEL
+    DisplayMap(maps, mapCount, &mapIndex);
 
-    // 4. BOUTON LANCER (En bas) - Moved down for spacing
-    float launchBtnWidth = GetScreenWidth() * 0.25;
-    if (launchBtnWidth < 200)
-      launchBtnWidth = 200;
-    float launchBtnHeight = GetScreenHeight() * 0.08;
-    if (launchBtnHeight < 50)
-      launchBtnHeight = 50;
-
-    if (DrawButton((Rectangle){(GetScreenWidth() - launchBtnWidth) / 2,
-                               GetScreenHeight() * 0.9, launchBtnWidth,
-                               launchBtnHeight},
-                   "LANCER")) {
-      // If valid map
-      if (mapIndex >= 0 && mapIndex < mapCount) {
-        strcpy(selectedMapPath, maps[mapIndex].path);
-        *finalPlayerCount = totalPlayers;
-        mapSelected = true;
-      }
+    // 5. START BUTTON
+    int btnW = 300;
+    int btnH = 80;
+    Rectangle startBtnRect = {(GetScreenWidth() - btnW)/2, GetScreenHeight() - 100, btnW, btnH};
+    
+    // Draw Text "LANCER" manually if image fails, but we assume image exists
+    if (DrawImageButton(startBtnRect, btnStartImg)) {
+         if (mapIndex >= 0 && mapIndex < mapCount) {
+             strcpy(selectedMapPath, maps[mapIndex].path);
+             *finalPlayerCount = totalPlayers;
+             mapSelected = true;
+         }
     }
 
     EndDrawing();
   }
 
-  // Cleanup
+  // --- CLEANUP ---
   if (allUsernames) {
-    for (int i = 0; i < userCount; i++)
-      free(allUsernames[i]);
+    for (int i = 0; i < userCount; i++) free(allUsernames[i]);
     free(allUsernames);
   }
   free(matches);
-  // UnloadTexture(setupBackground); // Removed
-
-  // Cleanup Maps
+  
   for (int i = 0; i < mapCount; i++) {
-    if (maps[i].hasTexture)
-      UnloadTexture(maps[i].texture);
+    if (maps[i].hasTexture) UnloadTexture(maps[i].texture);
   }
   free(maps);
-
+  
+  UnloadTexture(background);
+  UnloadTexture(btnStartImg);
+  
   UnloadDirectoryFiles(files);
 }
+
