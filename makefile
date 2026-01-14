@@ -15,6 +15,7 @@ EXEC_GAME = prog
 # J'ai combiné les fichiers de votre commande gcc précédente et ceux de votre exemple.
 # Supprimez ou ajoutez les lignes selon les fichiers qui existent vraiment dans votre projet !
 SRC_GAME = src/statPage/statPage.c \
+           src/Credits/credits.c \
            src/statPage/input_box.c \
            src/dataCode/user.c \
            src/Menu/menu.c \
