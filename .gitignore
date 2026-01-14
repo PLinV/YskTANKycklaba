@@ -5,6 +5,9 @@
 *.code-workspace
 .vscode/
 
+#extension image chelou
+*:Zone.Identifier
+
 # Object files
 *.o
 *.ko
