@@ -1,5 +1,5 @@
 username;maxScore;gamesPlayed;kill;death
-Alice;10;82;32;40
-hatem;13;2;45;21
-Bob;120;28;4;3
-goat;12;1;54;21
+J1;90;3;18;0
+J2;0;3;0;9
+J3;0;2;0;6
+J4;0;1;0;3
