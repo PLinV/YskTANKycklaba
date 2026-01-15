@@ -1042,7 +1042,7 @@ void DrawOverlay(void) {
   float btnY = popupY + popupH - 60;
   float spacing = 40;
   float startX = popupX + (popupW - (2 * btnW + spacing)) / 2;
-
+.*
   if (DrawPopupButton("OUI", (Rectangle){startX, btnY, btnW, btnH})) {
       if (showOverwriteConfirmation) {
           ForceSaveMap();
