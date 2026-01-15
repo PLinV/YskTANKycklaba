@@ -114,7 +114,7 @@ User *getOrCreateUser(const char *getUsername) {
   int found = 0; // savoir si on a trouvé un user
   FILE *file = fopen(USER_DATA_FILE, "r");
 
-  if (file == NULL) {
+  if (file == NULL) { // test si le fichier existe
     printf("aucun fichier utilisateur trouvé");
     return NULL;
   }
@@ -122,7 +122,7 @@ User *getOrCreateUser(const char *getUsername) {
   char line[256]; // buffer pour une ligne entière
   int lineNumber = 0;
 
-  while (fgets(line, sizeof(line), file) && (!found)) {
+  while (fgets(line, sizeof(line), file) && (!found)) { // tant qu'on a pas trouvé ou que on a pas fini le fichier
 
     lineNumber++;
     line[strcspn(line, "\n")] = '\0'; // enlève le \n éventuel
@@ -131,7 +131,7 @@ User *getOrCreateUser(const char *getUsername) {
     if (!token)
       continue;
 
-    if (strcmp(token, getUsername) == 0) {
+    if (strcmp(token, getUsername) == 0) { // on a trouvé le username
       found = 1;
       char username[50];
       strncpy(username, token, sizeof(username) - 1);
@@ -139,24 +139,24 @@ User *getOrCreateUser(const char *getUsername) {
 
       token = strtok(NULL, ";");
       if (token != NULL) {
-        int maxScore = atoi(token);
+        int maxScore = atoi(token); // on récupère le maxScore
         token = strtok(NULL, ";");
         if (token != NULL) {
-          int gamePlayed = atoi(token);
+          int gamePlayed = atoi(token); // on récupère le gamePlayed
           token = strtok(NULL, ";");
           if (token != NULL) {
-            int kill = atoi(token);
+            int kill = atoi(token); // on récupère le kill
             token = strtok(NULL, ";");
             if (token != NULL) {
-              int death = atoi(token);
+              int death = atoi(token); // on récupère le death
 
-              // tout est correct => créer l'utilisateur
+              // tout est correct => créer l'utilisateur on ajoute les informations
               userFound = createUser(username);
               userFound->maxScore = maxScore;
               userFound->gamePlayed = gamePlayed;
               userFound->kill = kill;
               userFound->death = death;
-
+              
             } else {
               printf("ligne %d : champ death manquant.\n", lineNumber);
             }
@@ -176,7 +176,7 @@ User *getOrCreateUser(const char *getUsername) {
     userFound = createUser(getUsername);
   }
   fclose(file);
-  return userFound;
+  return userFound; // retourne l'utilisateur trouvé ou créé. 
 }
 
 void updateUserStats(User *u, int newMaxScore) {
@@ -195,7 +195,8 @@ void incrementKill(User *u, int amount) { u->kill += amount; }
 int saveUser(User *u1) {
   FILE *file = fopen(USER_DATA_FILE, "r");
   char *tempFile = "data/users.tmp";
-  FILE *temp = fopen(tempFile, "w");
+  FILE *temp = fopen(tempFile, "w"); // on crée un fichier temporaire pour pas écraser
+                                     // les données avant d'avoir tout lu
   if (!temp) {
     printf("Erreur : impossible d'écrire le fichier temporaire.\n");
     return 0;
@@ -207,23 +208,22 @@ int saveUser(User *u1) {
   }
 
   int u1Written = 0;
-  char originalLine[256];
-
+  char originalLine[256]; // pour stocker la ligne originale
   char line[256];
 
   while (fgets(line, sizeof(line), file)) {
-    line[strcspn(line, "\n")] = '\0';
+    line[strcspn(line, "\n")] = '\0'; 
     strcpy(originalLine, line);
     char *token = strtok(line, ";");
     if (token == NULL)
       continue;
 
-    if (strcmp(token, u1->username) == 0) {
-      fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore,
+    if (strcmp(token, u1->username) == 0) { // on regarde si le username est le même 
+      fprintf(temp, "%s;%d;%d;%d;%d\n", u1->username, u1->maxScore, // si oui on écrit les nouvelles données
               u1->gamePlayed, u1->kill, u1->death);
       u1Written = 1;
     } else {
-      fputs(originalLine, temp);
+      fputs(originalLine, temp); // sinon on réécrit la ligne originale
       fprintf(temp, "\n");
     }
   }
@@ -236,8 +236,8 @@ int saveUser(User *u1) {
   fclose(file);
   fclose(temp);
 
-  remove(USER_DATA_FILE);
-  rename(tempFile, USER_DATA_FILE);
+  remove(USER_DATA_FILE); // supprimer l'ancien fichier 
+  rename(tempFile, USER_DATA_FILE); // renommer le fichier temporaire
 
   return 1;
 }
