@@ -5,34 +5,40 @@
 
 #include "render.h"
 
-Texture2D *Loadtextures() {
+Texture2D *Loadtextures()
+{
   // Max 12 blocks (0-11), then entities (12-25)
   Texture2D *textureArray = (Texture2D *)calloc(30, sizeof(Texture2D));
-  if (!textureArray) {
+  if (!textureArray)
+  {
     printf("ERROR ALLOCATING TEXTURES");
     return NULL;
   }
 
   // 1. Load Dynamic Blocks from texture_bloc
   FilePathList files = LoadDirectoryFiles("src/Graphisme/assets/texture_bloc");
-  for (int i = 0; i < (int)files.count; i++) {
+  for (int i = 0; i < (int)files.count; i++)
+  {
     const char *fname = GetFileName(files.paths[i]);
     int id = -1;
     const char *underscore = strchr(fname, '_');
-    if (underscore) {
+    if (underscore)
+    {
       char idStr[16] = {0};
       strncpy(idStr, fname, underscore - fname);
       id = atoi(idStr);
     }
 
-    if (id >= 0 && id < 12) {
+    if (id >= 0 && id < 12)
+    {
       textureArray[id] = LoadTexture(files.paths[i]);
     }
   }
   UnloadDirectoryFiles(files);
 
   // Default if missing (Index 0)
-  if (textureArray[0].id == 0) {
+  if (textureArray[0].id == 0)
+  {
     Image img = GenImageColor(32, 32, GREEN);
     textureArray[0] = LoadTextureFromImage(img);
     UnloadImage(img);
@@ -62,11 +68,19 @@ Texture2D *Loadtextures() {
   return textureArray;
 }
 
-void tileMap(float dU, int *visualMap, int W, int H, Texture2D *textureArray) {
+void tileMap(float dU, int *visualMap, int W, int H, Texture2D *textureArray)
+{
   ClearBackground(RAYWHITE);
 
-  for (int i = 0; i < W; i++) {
-    for (int j = 0; j < H; j++) {
+  Texture2D bg = textureArray[0];
+  DrawTexturePro(bg, (Rectangle){0, 0, bg.width, bg.height}, (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+                 (Vector2){0, 0},
+                 0.0f,
+                 WHITE);
+  for (int i = 0; i < W; i++)
+  {
+    for (int j = 0; j < H; j++)
+    {
       int visualID = visualMap[j * W + i];
 
       // Safety check
@@ -87,11 +101,13 @@ void tileMap(float dU, int *visualMap, int W, int H, Texture2D *textureArray) {
 Color playerColors[4] = {YELLOW, LIGHTGRAY, SKYBLUE, GREEN};
 
 void drawPlayers(float dU, player *players, int playerCount,
-                 Texture2D *textureArray, User *users[]) {
+                 Texture2D *textureArray, User *users[])
+{
   Texture2D bodyTex = textureArray[12];
   Texture2D canonTex = textureArray[13];
 
-  for (int i = 0; i < playerCount; i++) {
+  for (int i = 0; i < playerCount; i++)
+  {
     player *p = &players[i];
 
     Vector2 tankCenterPixels = {(p->posX) * dU, p->posY * dU};
@@ -127,10 +143,12 @@ void drawPlayers(float dU, player *players, int playerCount,
                   WHITE);
     // Draw Username
     Color healthColor = RED;
-    if (users && users[i]) {
+    if (users && users[i])
+    {
       // 0=BLUE, 1=RED, 2=GREEN, 3=ORANGE (GameSetup definitions)
       // Standard Raylib colors: BLUE, RED, GREEN, ORANGE
-      switch (users[i]->currentSkinID) {
+      switch (users[i]->currentSkinID)
+      {
       case 0:
         healthColor = BLUE;
         break;
@@ -159,10 +177,12 @@ void drawPlayers(float dU, player *players, int playerCount,
                   bodyDrawSize * (p->livesLeft / 3.0f), 5, healthColor);
   }
 }
-void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray) {
+void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray)
+{
   Texture2D bulletTex = textureArray[14];
 
-  for (int i = 0; i < pr->size; i++) {
+  for (int i = 0; i < pr->size; i++)
+  {
     projectile proj = pr->data[i];
 
     Vector2 bulletCenter = {proj.posX * dU, proj.posY * dU};
@@ -182,7 +202,8 @@ void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray) {
   }
 }
 
-void drawPowerUp(float dU, powerUp pu, Texture2D *textureArray) {
+void drawPowerUp(float dU, powerUp pu, Texture2D *textureArray)
+{
   Texture2D bodyTex = textureArray[pu.index + 15];
   Rectangle puShape = {pu.posX * dU, pu.posY * dU, 2 * dU, 2 * dU};
   DrawTexturePro(bodyTex,

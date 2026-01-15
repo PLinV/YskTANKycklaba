@@ -17,7 +17,7 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
                             int pC, char *map, int W, int H, bool *exitGame,
                             User *users[], int currentScore[]);
 void randomCoordsWithDistance(int *XY, player *p, char *map, int pC,
-                              int distanceMinToPlayer, int W, int H);
+                              int distanceMinToPlayer, int W, int H, bool isPlayer);
 void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
               int W, int H);
 void listRem(int projectileIndex, projectileList *pr);

@@ -220,7 +220,7 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
             {
                 int randomStartCoord[2] = {0, 0};
                 randomCoordsWithDistance(randomStartCoord, p, map, pC, (int)H / 2, W,
-                                         H);
+                                         H, true);
                 pla->posX = randomStartCoord[0] + 0.5;
                 pla->posY = randomStartCoord[1] + 0.5;
                 pla->livesLeft -= 1;
@@ -393,8 +393,8 @@ void actions(player *players, int pC, projectileList *pr)
             // random spread
             float random_orientation =
                 p->aimOrientation + (float)(rand() % 40) - 20.0f;
-            spawnBullet(*p, pr, random_orientation, 0.3f, 0, 0.15f);
-            p->shootTimer = 3;
+            spawnBullet(*p, pr, random_orientation, 0.4f, 0, 0.15f);
+            p->shootTimer = 8;
         }
     }
 }
@@ -417,12 +417,12 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
         break;
     case 3: // spawn dvd enemy (projectile)
     {
-        float speed = 0.2f;
+        float speed = 0.25f;
         float rad = p->aimOrientation * PI / 180.0f;
         float sx = speed * cosf(rad);
         float sy = speed * sinf(rad);
         projectile dvd = {p->playerId, pu->posX + 1.f, pu->posY + 1.f, sx,
-                          sy, p->aimOrientation, 1.5f, 20};
+                          sy, p->aimOrientation, 1.5f, 30};
         listAdd(pr, dvd);
         break;
     }
@@ -440,14 +440,14 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
 }
 
 void randomCoordsWithDistance(int *XY, player *p, char *map, int pC,
-                              int distanceMinToPlayer, int W, int H)
+                              int distanceMinToPlayer, int W, int H, bool isPlayer)
 {
     int tries = 0;
     int randomX;
     int randomY;
     bool hasFinished = false;
 
-    // First, try to find a specific Spawn P1/P2 tile (Value 3)
+    // Spawn points first
     int spawnCount = 0;
     int *spawns = (int *)calloc(W * H, sizeof(int));
     if (spawns)
@@ -462,7 +462,7 @@ void randomCoordsWithDistance(int *XY, player *p, char *map, int pC,
     }
 
     // Pick from Spawns if available
-    if (spawnCount > 0 && spawns)
+    if (spawnCount > 0 && spawns && isPlayer)
     {
         int attempt = 0;
         while (!hasFinished && attempt < 50)
@@ -543,7 +543,7 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
         if (!pu->hasSpawnYet)
         {
             int XY[2] = {-1, 0};
-            randomCoordsWithDistance(XY, p, map, pC, 10, W, H); // may cause bug &XY
+            randomCoordsWithDistance(XY, p, map, pC, 10, W, H, false);
             pu->index = rand() % 6;
             pu->posX = (float)XY[0];
             pu->posY = (float)XY[1];
@@ -563,7 +563,7 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
             {
                 givePowerUp(pla, pu, pr);
                 pu->posY = 1000000.0f;
-                pu->timer = 60 * 1;
+                pu->timer = 60 * 8;
                 pu->hasSpawnYet = false;
             }
         }
@@ -774,7 +774,7 @@ int RunGame(char *mapPath, int playersCount, User *users[])
         }
         int randomStartCoord[2] = {0, 0};
         randomCoordsWithDistance(randomStartCoord, &p[i], cleanMap, playersCount,
-                                 (int)height / 3, width, height);
+                                 (int)height / 3, width, height, true);
         p[i].posX = randomStartCoord[0] + 0.5;
         p[i].posY = randomStartCoord[1] + 0.5;
     }

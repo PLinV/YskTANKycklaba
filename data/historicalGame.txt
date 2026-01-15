@@ -7,3 +7,7 @@ gameNum;usernameP1;usernameP2;usernameP3;usernameP4;scoreP1;scoreP2;scoreP3;scor
 6;J1;J2;NULL;NULL;30;0;0;0;1
 7;J1;J2;NULL;NULL;30;0;0;0;1
 8;J1;J2;NULL;NULL;30;0;0;0;1
+9;Aurel;J2;NULL;NULL;30;0;0;0;1
+10;J1;J2;NULL;NULL;30;0;0;0;1
+11;J1;J2;NULL;NULL;30;0;0;0;1
+12;J1;J2;NULL;NULL;30;0;0;0;1

@@ -1,7 +1,8 @@
 username;maxScore;gamesPlayed;kill;death
-J1;90;3;18;0
-J2;0;3;0;9
+J1;90;6;27;0
+J2;0;7;0;21
 J3;0;2;0;6
 J4;0;1;0;3
 hatem;0;0;0;0
 paulin;0;0;0;0
+Aurel;30;1;3;0
