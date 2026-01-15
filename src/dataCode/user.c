@@ -58,6 +58,9 @@ User *getUser(const char *getUsername) {
     line[strcspn(line, "\n")] = '\0'; // enlève le \n éventuel
 
     char *token = strtok(line, ";");
+    if (!token)
+      continue;
+
     if (strcmp(token, getUsername) == 0) {
       found = 1;
       char username[50];
@@ -125,6 +128,9 @@ User *getOrCreateUser(const char *getUsername) {
     line[strcspn(line, "\n")] = '\0'; // enlève le \n éventuel
 
     char *token = strtok(line, ";");
+    if (!token)
+      continue;
+
     if (strcmp(token, getUsername) == 0) {
       found = 1;
       char username[50];
@@ -261,6 +267,34 @@ int GetAllUsers(char ***usernames) {
   }
 
   char line[256];
+  if (!fgets(line, sizeof(line), file)) {
+    fclose(file);
+    *usernames = NULL;
+    return 0;
+  }
+  // Reset file pointer to beginning if we want to read the first line as data,
+  // OR if the first line is header, we should skip it.
+  // Assuming the file has a header based on other functions, so we consume it.
+  // Actually, users.txt usually has a header "username;maxScore...".
+  // If the file was just cleared by user, it might be empty (size 0).
+  // If it's empty, fgets above handles it.
+  // If it has header, we should probably skip it if it's treated as header,
+  // BUT existing code in this function didn't seem to explicitly skip header??
+  // Looking at GetAllUsers in previous view_file:
+  /*
+  while (fgets(line, sizeof(line), file)) {
+    // ...
+    char *token = strtok(line, ";");
+    // ...
+  }
+  */
+  // It seems it treats the header as a user if it's not careful.
+  // However, "username" (header) won't crash, just be added as a user?
+  // Let's stick to preventing crash on empty file first.
+
+  rewind(file); // Go back to start to let the loop handle everything including
+                // header if logic allows, OR if it was empty we returned above.
+
   while (fgets(line, sizeof(line), file)) {
     line[strcspn(line, "\n")] = '\0';
     if (strlen(line) == 0)

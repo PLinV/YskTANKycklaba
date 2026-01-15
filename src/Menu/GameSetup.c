@@ -183,6 +183,9 @@ void DisplayMap(MapUI *maps, int count, int *mapIndex) {
 
 // --- FONCTION PRINCIPALE SETUP ---
 void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
+
+  SetWindowTitle("YskTANKycklaba - Game Setup");
+
   // Init flag to force score refresh on entry
   bool forceScoreUpdate = true;
 
@@ -191,17 +194,14 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
   const int screenHeight = GetScreenHeight();
   (void)screenWidth;
   (void)screenHeight;
-  SetWindowTitle("YskTANKycklaba - Game Setup");
   Music musicMenu = LoadMusicStream("src/Menu/musique/musiqueMenuStart.mp3");
   bool musiqueLoad;
   // 3. LANCER LA LECTURE
   if (musicMenu.frameCount > 0) {
-    printf("Musique chargée avec succès !\n");
     PlayMusicStream(musicMenu);
     musiqueLoad = true;
     SetMusicVolume(musicMenu, 0.5f);
   } else {
-    printf("Echec du chargement de la musique !\n");
     musiqueLoad = false;
   }
 
@@ -260,7 +260,7 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
     }
 
     // --- INPUT GESTION ---
-    if (IsKeyPressed(KEY_BACKSPACE)) {
+    if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_ESCAPE)) {
       if (editingPlayer != -1) {
         int len = strlen(setupJoueurs[editingPlayer].pseudo);
         if (len > 0)
@@ -436,7 +436,6 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
       }
 
       // 1v1 score
-      // 1v1 score
       if (totalPlayers == 2 && setupJoueurs[0].pseudo[0] != '\0' &&
           setupJoueurs[1].pseudo[0] != '\0') {
 
@@ -515,10 +514,9 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
       }
 
       DrawCircle(centerX, panelY + 150, 30, skinColor);
-      DrawCircleLines(centerX, panelY + 150, 32,
-                      GOLD); // Gold border for tank look
+      DrawCircleLines(centerX, panelY + 150, 32, GOLD);
 
-      // Arrows
+      // Flèches
       Rectangle leftArrow = {centerX - 60, panelY + 140, 30, 30};
       Rectangle rightArrow = {centerX + 30, panelY + 140, 30, 30};
 
@@ -534,7 +532,7 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !clickedInUI &&
         editingPlayer != -1) {
-      editingPlayer = -1; // Close editing if clicked elsewhere
+      editingPlayer = -1;
     }
 
     // 4. DISPLAY MAP CAROUSEL
@@ -546,18 +544,22 @@ void RunGameSetup(char *selectedMapPath, int *finalPlayerCount, User *users[]) {
     Rectangle startBtnRect = {(GetScreenWidth() - btnW) / 2,
                               GetScreenHeight() - 100, btnW, btnH};
 
-    // Draw Text "LANCER" manually if image fails, but we assume image exists
     if (DrawImageButton(startBtnRect, btnStartImg)) {
       if (mapIndex >= 0 && mapIndex < mapCount) {
         strcpy(selectedMapPath, maps[mapIndex].path);
         *finalPlayerCount = totalPlayers;
-        mapSelected = true;
+        mapSelected = true; // Va permettre de finir le while de RunGameSetup
+                            // pour faire ensuite le RunGame
         for (int i = 0; i < *finalPlayerCount; i++) {
           users[i] = getUser(setupJoueurs[i].pseudo);
           if (users[i]) {
             users[i]->currentSkinID = setupJoueurs[i].skinID;
           }
           printf("\n ----%d---- \n", users[i]->gamePlayed);
+        }
+        // Cleanup remaining slots to avoid stale data
+        for (int i = *finalPlayerCount; i < 4; i++) {
+          users[i] = NULL;
         }
       }
     }

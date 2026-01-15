@@ -519,28 +519,13 @@ void checkWin(bool *exitGame, player *p, int playerCount, User *users[]) {
   }
   if (count >= playerCount - 1) {
     *exitGame = true;
-    for (int i = 0; i < playerCount; i++) {
-      // Vérification de sécurité
-      if (users[i] != NULL) {
-        users[i]->gamePlayed++; // On incrémente le nombre de parties jouées
-
-        // On vérifie le High Score
-        if (currentScore[i] > users[i]->maxScore) {
-          users[i]->maxScore = currentScore[i];
-          printf("Nouveau High Score pour %s : %d !\n", users[i]->username,
-                 users[i]->maxScore);
-        }
-
-        // Important : Sauvegarder le User dans le fichier ici
-        saveUser(users[i]);
-      }
-    }
   }
 }
 
 int RunGame(char *mapPath, int playersCount, User *users[]) {
 
   SetWindowTitle("YskTANKycklaba - Game");
+
   for (int k = 0; k < 4; k++)
     currentScore[k] = 0;
   srand(time(NULL)); // makes random random either way random isn't random which
@@ -701,7 +686,7 @@ int RunGame(char *mapPath, int playersCount, User *users[]) {
   bool exitGame = false;
   while (!WindowShouldClose() && !exitGame) {
 
-    if (IsKeyPressed(KEY_BACKSPACE))
+    if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_ESCAPE))
       exitGame = true;
 
     BeginDrawing();
@@ -715,7 +700,6 @@ int RunGame(char *mapPath, int playersCount, User *users[]) {
     mainLoop(p, playersCount, &prList, &pu, dU, cleanMap, visualMap, underlayId,
              width, height, &exitGame, textureArray, users, currentScore);
 
-    DrawText("Press BACKSPACE to return to Menu", 10, 10, 20, DARKGRAY);
     EndDrawing();
   }
 
@@ -747,14 +731,6 @@ int RunGame(char *mapPath, int playersCount, User *users[]) {
 
   // Check if game ended naturally
   if (exitGame) {
-    // If backspace was pressed, we might not want to show game over?
-    // Logic: if backspace pressed (exitGame=true) but game not finished?
-    // Actually mainLoop updates exitGame when game ends.
-    // We need to know if backspace was pressed.
-    // Let's re-check the loop condition.
-    // If IsKeyPressed(KEY_BACKSPACE) was true, then return -1 (Menu)
-    // If game ended by checkWin, return winner.
-
     // Simpler approach: check lives.
     for (int k = 0; k < playersCount; k++) {
       if (p != NULL && p[k].livesLeft > 0) {
@@ -764,14 +740,15 @@ int RunGame(char *mapPath, int playersCount, User *users[]) {
     }
 
     if (aliveCount <= 1) {
-      winner = lastAliveID;
+      winner = lastAliveID; // Permet ensuite de RunGameOver pour actualiser les
+                            // statistiques
     }
   }
 
-  // Calculate Final Scores for History
+  // Calcul du score final pour historical
   for (int i = 0; i < playersCount; i++) {
     if (users[i]) {
-      // Formula: Score = Kills * 10 - Deaths
+      // Formule: Score = Kills * 10 - Deaths
       int score = (users[i]->currentKills * 10) - users[i]->currentDeaths;
       if (score < 0)
         score = 0; // Prevent negative scores

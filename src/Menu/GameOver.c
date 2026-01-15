@@ -21,13 +21,17 @@ static bool DrawStyledButton(Rectangle bounds, const char *text) {
   DrawText(text, bounds.x + (bounds.width - textWidth) / 2,
            bounds.y + (bounds.height - fontSize) / 2, fontSize, WHITE);
 
-  if (isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+  if ((isHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ||
+      IsKeyPressed(KEY_ESCAPE)) {
     pressed = true;
   }
   return pressed;
 }
 
 void RunGameOver(int winnerId, User *users[]) {
+
+  SetWindowTitle("YskTANKycklaba - Game");
+
   // Determine winner text
   const char *winnerText;
   Color winnerColor;

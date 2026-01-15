@@ -4,6 +4,13 @@
 #include <string.h>
 #define HISTORICAL_GAME_DATA_FILE                                              \
   "data/historicalGame.txt" // peut-être à modifier
+
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
+
 /* gcc \
   YskTANKycklaba/src/dataCode/historicalGame.c \
   -o historicalGame \
@@ -75,30 +82,35 @@ void J1vsJ2Score(const char *username1, const char *username2,
   }
 
   char line[256];
-  int isHeader = 1;
 
   while (fgets(line, sizeof(line), file)) {
-    // Ignorer l'en-tête
-    if (isHeader) {
-      isHeader = 0;
-      continue;
-    }
-
     // Copie de la ligne pour strtok
     char lineCopy[256];
     strcpy(lineCopy, line);
 
     // -- Extraction des données --
     // Format: id;u1;u2;u3;u4;s1;s2;s3;s4;winP
-    strtok(lineCopy, ";");        // ID (skip)
+    // -- Extraction des données --
+    // Format: id;u1;u2;u3;u4;s1;s2;s3;s4;winP
+    char *tokenID = strtok(lineCopy, ";");
+    if (!tokenID)
+      continue; // Ligne vide ou sans ID
+
+    // Header check plus robuste : si l'ID est "gameNum", c'est le header
+    if (strcmp(tokenID, "gameNum") == 0) {
+      continue;
+    }
+
     char *u1 = strtok(NULL, ";"); // Username 1
     char *u2 = strtok(NULL, ";"); // Username 2
     char *u3 = strtok(NULL, ";"); // Username 3
     char *u4 = strtok(NULL, ";"); // Username 4
 
     // Skip s1, s2, s3, s4
-    for (int i = 0; i < 4; i++)
-      strtok(NULL, ";");
+    for (int i = 0; i < 4; i++) {
+      if (!strtok(NULL, ";"))
+        break;
+    }
 
     char *winToken = strtok(NULL, ";\r\n");
 
@@ -149,21 +161,18 @@ int getLastGameId() {
 
   char line[256]; // Buffer pour stocker une ligne
   int lastId = 0;
-  int isHeader = 1; // Indicateur pour savoir si on est sur la 1ere ligne
 
   // On lit le fichier ligne par ligne
   while (fgets(line, sizeof(line), file)) {
-
-    // On saute la première ligne (l'en-tête)
-    if (isHeader) {
-      isHeader = 0;
-      continue;
-    }
 
     // strtok découpe la chaine au premier ";"
     char *token = strtok(line, ";");
 
     if (token != NULL) {
+      // Vérifie si c'est le header
+      if (strcmp(token, "gameNum") == 0)
+        continue;
+
       // On convertit le bout de texte en entier
       lastId = atoi(token);
     }
@@ -176,11 +185,26 @@ int getLastGameId() {
 int saveGame(HistoricalGame *game) {
   int newId = getLastGameId() + 1;
 
+  // Check if file is empty/missing to write header
+  FILE *checkFile = fopen(HISTORICAL_GAME_DATA_FILE, "r");
+  long size = 0;
+  if (checkFile) {
+    fseek(checkFile, 0, SEEK_END);
+    size = ftell(checkFile);
+    fclose(checkFile);
+  }
+
   FILE *file = fopen(HISTORICAL_GAME_DATA_FILE, "a");
 
   if (!file) {
-    printf("Erreur : impossible de lire le fichier source.\n");
+    printf("Erreur : impossible d'ouvrir le fichier pour l'ajout.\n");
     return 0;
+  }
+
+  // Write header if file was empty
+  if (size == 0) {
+    fprintf(file, "gameNum;usernameP1;usernameP2;usernameP3;usernameP4;scoreP1;"
+                  "scoreP2;scoreP3;scoreP4;winP\n");
   }
 
   fprintf(file, "%d;%s;%s;%s;%s;%d;%d;%d;%d;%d\n", newId, game->username1,

@@ -56,7 +56,11 @@ bool DrawImageButton(Rectangle bounds, Texture2D texture, bool enabled) {
 }
 
 int main() {
+
   InitWindow(1000, 640, "YskTANKycklaba - Menu");
+
+  SetExitKey(KEY_NULL); // Empêcher de fermer le jeu avec echap
+
   SetTargetFPS(60);
   SetWindowState(FLAG_WINDOW_RESIZABLE);
 
@@ -69,12 +73,10 @@ int main() {
   bool musiqueLoad;
   // 3. LANCER LA LECTURE
   if (musicMenu.frameCount > 0) {
-    printf("Musique chargée avec succès !\n");
     PlayMusicStream(musicMenu);
     musiqueLoad = true;
     SetMusicVolume(musicMenu, 0.5f);
   } else {
-    printf("Echec du chargement de la musique !\n");
     musiqueLoad = false;
   }
 
@@ -89,7 +91,6 @@ int main() {
   int animSpeed = 4; // Vitesse de l'animation
 
   if (imBackgroundAnim.data != NULL) {
-    printf("Animation d'arrière-plan chargée ! Frames: %d\n", animFrames);
     background = LoadTextureFromImage(imBackgroundAnim);
     isAnim = true;
   } else {
@@ -203,11 +204,9 @@ int main() {
 
         if (mapPath[0] != '\0') {
           int winner = RunGame(mapPath, playerCount, users);
-          SetWindowTitle("YskTANKycklaba - Game");
 
           if (winner != -1) {
             RunGameOver(winner, users);
-            SetWindowTitle("YskTANKycklaba - Menu");
           }
         }
       } while (mapPath[0] != '\0');

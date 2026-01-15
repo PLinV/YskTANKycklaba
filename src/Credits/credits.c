@@ -2,8 +2,9 @@
 #include <stdio.h>
 
 void RunCredits(void) {
-  SetTargetFPS(60);
+
   SetWindowTitle("YskTANKycklaba - Credits");
+
   // Initialisation du bouton Home
   Rectangle btnHome = {30, 30, 100, 40};
   Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
@@ -39,7 +40,8 @@ void RunCredits(void) {
              btnHome.y + (btnHome.height - homeFontSize) / 2, homeFontSize,
              WHITE);
 
-    if (homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if ((homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ||
+        IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_ESCAPE)) {
       EndDrawing(); // Important de finir le dessin avant de break
       break;
     }

@@ -26,8 +26,9 @@ int center_y() {
 }
 
 int RunStats(Music musicMenu) {
-  SetTargetFPS(60);
+
   SetWindowTitle("YskTANKycklaba - Statistiques");
+
   Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
 
   // partie titre
@@ -92,7 +93,8 @@ int RunStats(Music musicMenu) {
              btnHome.y + (btnHome.height - homeFontSize) / 2, homeFontSize,
              WHITE);
 
-    if (homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if ((homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ||
+        IsKeyPressed(KEY_ESCAPE)) {
       EndDrawing();
       break;
     }
