@@ -70,6 +70,8 @@ typedef struct powerUp // the physical object
 
 Texture2D *Loadtextures();
 void tileMap(float dU, int *visualMap, int W, int H, Texture2D *textureArray);
-void drawPlayers(float dU, player *p, int playerCount, Texture2D *textureArray);
+#include "../dataCode/user.h"
+void drawPlayers(float dU, player *p, int playerCount, Texture2D *textureArray,
+                 User *users[]);
 void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray);
 void drawPowerUp(float dU, powerUp pu, Texture2D *textureArray);

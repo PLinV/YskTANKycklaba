@@ -8,11 +8,12 @@
 
 int currentScore[] = {0, 0, 0, 0};
 
-void checkWin(bool *exitGame, player *p, int playerCount, User* users[]);
+void checkWin(bool *exitGame, player *p, int playerCount, User *users[]);
 
 void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu,
               float dU, char *map, int *visualMap, int underlayId, int W, int H,
-              bool *exitGame, Texture2D *textureArray, User* users[], int currentScore[]) {
+              bool *exitGame, Texture2D *textureArray, User *users[],
+              int currentScore[]) {
   // input and logic
   movePlayers(p, playerCount, map, W, H);
   actions(p, playerCount, pr);
@@ -22,7 +23,7 @@ void mainLoop(player *p, int playerCount, projectileList *pr, powerUp *pu,
 
   // render
   tileMap(dU, visualMap, W, H, textureArray);
-  drawPlayers(dU, p, playerCount, textureArray);
+  drawPlayers(dU, p, playerCount, textureArray, users);
   drawPowerUp(dU, *pu, textureArray);
   drawProjectiles(dU, pr, textureArray);
 }
@@ -155,8 +156,8 @@ void movePlayers(player *players, int pC, char *map, int W, int H) {
 }
 
 void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
-                            int pC, char *map, int W, int H, bool *exitGame, 
-                            User* users[], int currentScore[]) {
+                            int pC, char *map, int W, int H, bool *exitGame,
+                            User *users[], int currentScore[]) {
   for (int j = 0; j < pC; j++) {
     if (p[j].playerId == proj->playerId)
       continue; // skip its own player
@@ -167,24 +168,23 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
                               pla->posY - pla->size / 2.0f, pla->size,
                               pla->size};
     if (CheckCollisionRecs(ProjHitbox, PlayerHitbox)) {
-    // --- DEBUT MODIFICATION STATS ---
-      
+      // --- DEBUT MODIFICATION STATS ---
+
       int attackerID = proj->playerId;
       int victimID = pla->playerId;
       // 1. Gestion de l'ATTAQUANT (Celui qui a tiré)
       if (attackerID >= 0 && attackerID < 4 && users[attackerID] != NULL) {
-          // Incrémenter les kills
-          users[attackerID]->kill += 1;
-          // Ajouter du score pour la touche (ex: +10 points)
-          currentScore[attackerID] += 10;
-          
-          printf("Joueur %s : Kill confirmé ! Score: %d\n", users[attackerID]->username, currentScore[attackerID]);
+        // Incrémenter les kills de la partie
+        users[attackerID]->currentKills += 1;
+
+        printf("Joueur %s : Kill confirmé ! Total Kills: %d\n",
+               users[attackerID]->username, users[attackerID]->currentKills);
       }
 
       // 2. Gestion de la VICTIME (Celui qui est touché)
       if (victimID >= 0 && victimID < 4 && users[victimID] != NULL) {
-          // Incrémenter les morts
-          users[victimID]->death += 1;
+        // Incrémenter les morts de la partie
+        users[victimID]->currentDeaths += 1;
       }
 
       // basically kills the player
@@ -207,7 +207,7 @@ void checkPlayersGettingHit(projectile *proj, Rectangle ProjHitbox, player *p,
 
 void updateProjectiles(projectileList *pr, player *p, int pC, char *map,
                        int *visualMap, int underlayId, int W, int H,
-                       bool *exitGame, User* users[], int currentScore[]) {
+                       bool *exitGame, User *users[], int currentScore[]) {
   for (int i = pr->size - 1; i >= 0; i--) {
     projectile *proj = &pr->data[i];
     Rectangle ProjHitbox = {proj->posX - proj->size / 2.0f,
@@ -215,7 +215,8 @@ void updateProjectiles(projectileList *pr, player *p, int pC, char *map,
                             proj->size};
 
     // check player collisions
-    checkPlayersGettingHit(proj, ProjHitbox, p, pC, map, W, H, exitGame, users, currentScore);
+    checkPlayersGettingHit(proj, ProjHitbox, p, pC, map, W, H, exitGame, users,
+                           currentScore);
 
     // horizontal movement and collisions
     if (!IsThereAnObstacle(ProjHitbox, proj->speedX, true, map, visualMap,
@@ -508,7 +509,7 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr,
       pla->powerUp.timer -= 1;
   }
 }
-void checkWin(bool *exitGame, player *p, int playerCount, User* users[]) {
+void checkWin(bool *exitGame, player *p, int playerCount, User *users[]) {
   int count = 0;
   for (int i = 0; i < playerCount; i++) {
     player pla = p[i];
@@ -519,28 +520,29 @@ void checkWin(bool *exitGame, player *p, int playerCount, User* users[]) {
   if (count >= playerCount - 1) {
     *exitGame = true;
     for (int i = 0; i < playerCount; i++) {
-        // Vérification de sécurité
-        if (users[i] != NULL) {
-            users[i]->gamePlayed++; // On incrémente le nombre de parties jouées
-            
-            // On vérifie le High Score
-            if (currentScore[i] > users[i]->maxScore) {
-                users[i]->maxScore = currentScore[i];
-                printf("Nouveau High Score pour %s : %d !\n", users[i]->username, users[i]->maxScore);
-            }
-            
-            // Important : Sauvegarder le User dans le fichier ici
-            saveUser(users[i]); 
+      // Vérification de sécurité
+      if (users[i] != NULL) {
+        users[i]->gamePlayed++; // On incrémente le nombre de parties jouées
+
+        // On vérifie le High Score
+        if (currentScore[i] > users[i]->maxScore) {
+          users[i]->maxScore = currentScore[i];
+          printf("Nouveau High Score pour %s : %d !\n", users[i]->username,
+                 users[i]->maxScore);
         }
+
+        // Important : Sauvegarder le User dans le fichier ici
+        saveUser(users[i]);
+      }
     }
-    
   }
 }
 
-int RunGame(char *mapPath, int playersCount, User* users[]) {
+int RunGame(char *mapPath, int playersCount, User *users[]) {
 
   SetWindowTitle("YskTANKycklaba - Game");
-  for(int k=0; k<4; k++) currentScore[k] = 0;
+  for (int k = 0; k < 4; k++)
+    currentScore[k] = 0;
   srand(time(NULL)); // makes random random either way random isn't random which
                      // is a problem when you want randomness
   // Default map if none provided
@@ -571,23 +573,6 @@ int RunGame(char *mapPath, int playersCount, User* users[]) {
 
   // Load Visual Map
   int *visualMap = (int *)calloc(width * height, sizeof(int));
-
-  // Construct path for _vis.txt
-  // Assuming format "mapname.txt" -> "mapname_vis.txt" or just "mapname" if no
-  // ext? graphisme.c logic: SaveMap to mapname.txt. Wait, graphisme SaveMap
-  // saves VISUALS in the SAME file now? Let me check graphisme.c content...
-  // Line 392 in graphisme.c: Writes Collision Matrix, THEN, Write Visual
-  // Matrix. Ah! It saves EVERYTHING in ONE file now. So I don't need _vis.txt.
-  // I just need to read more lines. Graphisme logic: Header Collision Map
-  // (Height lines of Width numbers) Visual Map (Height lines of Width numbers)
-
-  // Re-reading graphisme.c SaveMap:
-  // fprintf(file, "%d,%d,%d,%d\n", ...);
-  // Loop height: Loop width: fprintf collision.
-  // Loop height: Loop width: fprintf visual.
-
-  // So in Game.c, I need to continue parsing `text`.
-
   int index = 0;
   char *token = strtok(NULL, ",\n\r");
 
@@ -601,7 +586,6 @@ int RunGame(char *mapPath, int playersCount, User* users[]) {
 
   // Read Visual
   index = 0;
-  // Continue parsing token (should be at start of visual map now)
   while (token != NULL && index < width * height) {
     int val = atoi(token);
     visualMap[index] = val;
@@ -642,6 +626,13 @@ int RunGame(char *mapPath, int playersCount, User* users[]) {
   }
 
   // 3. Init Players & Projectiles
+  for (int i = 0; i < playersCount; i++) {
+    if (users[i]) {
+      users[i]->currentScore = 0;
+      users[i]->currentKills = 0;
+      users[i]->currentDeaths = 0;
+    }
+  }
 
   powerUpPlayer pupl = {-1, false, false};
 
@@ -774,6 +765,17 @@ int RunGame(char *mapPath, int playersCount, User* users[]) {
 
     if (aliveCount <= 1) {
       winner = lastAliveID;
+    }
+  }
+
+  // Calculate Final Scores for History
+  for (int i = 0; i < playersCount; i++) {
+    if (users[i]) {
+      // Formula: Score = Kills * 10 - Deaths
+      int score = (users[i]->currentKills * 10) - users[i]->currentDeaths;
+      if (score < 0)
+        score = 0; // Prevent negative scores
+      users[i]->currentScore = score;
     }
   }
 

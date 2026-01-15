@@ -12,6 +12,10 @@ typedef struct {
   int gamePlayed;    // >= 0
   int kill;          // >= 0
   int death;         // >= 0
+  int currentSkinID; // 0=BLUE, 1=RED, 2=GREEN, 3=ORANGE
+  int currentScore;  // Score de la partie en cours
+  int currentKills;  // Kills de la partie en cours
+  int currentDeaths; // Morts de la partie en cours
 } User;
 
 // permet une instance user et de le renvoyer
@@ -30,11 +34,11 @@ void updateUserStats(User *u, int newScore);
 // ajoute 1 a gamePlayed du user
 void incrementGame(User *u);
 
-// ajoute 1 a death du user
-void incrementDeath(User *u);
+// ajoute amount a death du user
+void incrementDeath(User *u, int amount);
 
-// ajoute 1 a kill du user
-void incrementKill(User *u);
+// ajoute amount a kill du user
+void incrementKill(User *u, int amount);
 
 // renvoie le kdratio du user
 float getKdRatio(User *u);

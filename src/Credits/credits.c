@@ -2,78 +2,80 @@
 #include <stdio.h>
 
 void RunCredits(void) {
-    SetTargetFPS(60);
+  SetTargetFPS(60);
+  SetWindowTitle("YskTANKycklaba - Credits");
+  // Initialisation du bouton Home
+  Rectangle btnHome = {30, 30, 100, 40};
+  Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
 
-    // Initialisation du bouton Home
-    Rectangle btnHome = { 30, 30, 100, 40 };
-    Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
+  while (!WindowShouldClose()) {
+    BeginDrawing();
 
-    while (!WindowShouldClose()) {
-        BeginDrawing();
+    ClearBackground(RAYWHITE);
 
-        ClearBackground(RAYWHITE);
+    // Dessiner le fond
+    DrawTexturePro(
+        background,
+        (Rectangle){0, 0, (float)background.width, (float)background.height},
+        (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()},
+        (Vector2){0, 0}, 0.0f, WHITE);
 
-        // Dessiner le fond
-        DrawTexturePro(
-            background,
-            (Rectangle){0, 0, (float)background.width, (float)background.height},
-            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()},
-            (Vector2){0, 0}, 0.0f, WHITE);
+    // Dessiner l'overlay semi-transparent
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
+                  (Color){0, 0, 0, 150});
 
-        // Dessiner l'overlay semi-transparent
-        DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){0, 0, 0, 150});
+    // Gestion du bouton Home (Style plus moderne)
+    Vector2 mouse = GetMousePosition();
+    bool homeHover = CheckCollisionPointRec(mouse, btnHome);
 
-        // Gestion du bouton Home (Style plus moderne)
-        Vector2 mouse = GetMousePosition();
-        bool homeHover = CheckCollisionPointRec(mouse, btnHome);
-        
-        DrawRectangleRec(btnHome, homeHover ? LIGHTGRAY : DARKGRAY);
-        DrawRectangleLinesEx(btnHome, 2, WHITE);
-        
-        // Centrer le texte "Home" dans le bouton
-        const char* homeText = "< Retour";
-        int homeFontSize = 20;
-        int homeTextWidth = MeasureText(homeText, homeFontSize);
-        DrawText(homeText, 
-                 btnHome.x + (btnHome.width - homeTextWidth) / 2, 
-                 btnHome.y + (btnHome.height - homeFontSize) / 2, 
-                 homeFontSize, WHITE);
+    DrawRectangleRec(btnHome, homeHover ? LIGHTGRAY : DARKGRAY);
+    DrawRectangleLinesEx(btnHome, 2, WHITE);
 
-        if (homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            EndDrawing(); // Important de finir le dessin avant de break
-            break;
-        }
+    // Centrer le texte "Home" dans le bouton
+    const char *homeText = "< Retour";
+    int homeFontSize = 20;
+    int homeTextWidth = MeasureText(homeText, homeFontSize);
+    DrawText(homeText, btnHome.x + (btnHome.width - homeTextWidth) / 2,
+             btnHome.y + (btnHome.height - homeFontSize) / 2, homeFontSize,
+             WHITE);
 
-        // Affichage du titre
-        const char *title = "CREDITS";
-        int titleFontSize = 60;
-        int titleWidth = MeasureText(title, titleFontSize);
-        DrawText(title, (GetScreenWidth() - titleWidth) / 2, 80, titleFontSize, GOLD);
-
-        // Affichage des crédits
-        const char *creditsText[] = {
-            "Jeu développé par :",
-            "",
-            "BORDET Aurélien",
-            "LAGRANGE Gauthier",
-            "BENGHACHEM Hatem",
-            "VERRIERE Paulin",
-            "Projet encadré par : M. De Jonckère Olivier",
-        };
-        
-        int startY = 250;
-        int spacing = 50;
-
-        for (int i = 0; i < 7; i++) {
-            Color textColor = (i == 0) ? YELLOW : WHITE; // Titre de section en jaune
-            int textFontSize = (i == 0) ? 35 : 30;
-            
-            int textWidth = MeasureText(creditsText[i], textFontSize);
-            DrawText(creditsText[i], (GetScreenWidth() - textWidth) / 2, startY + i * spacing, textFontSize, textColor);
-        }
-
-        EndDrawing();
+    if (homeHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      EndDrawing(); // Important de finir le dessin avant de break
+      break;
     }
-    
-    UnloadTexture(background);
+
+    // Affichage du titre
+    const char *title = "CREDITS";
+    int titleFontSize = 60;
+    int titleWidth = MeasureText(title, titleFontSize);
+    DrawText(title, (GetScreenWidth() - titleWidth) / 2, 80, titleFontSize,
+             GOLD);
+
+    // Affichage des crédits
+    const char *creditsText[] = {
+        "Jeu développé par :",
+        "",
+        "BORDET Aurélien",
+        "LAGRANGE Gauthier",
+        "BENGHACHEM Hatem",
+        "VERRIERE Paulin",
+        "Projet encadré par : M. De Jonckère Olivier",
+    };
+
+    int startY = 250;
+    int spacing = 50;
+
+    for (int i = 0; i < 7; i++) {
+      Color textColor = (i == 0) ? YELLOW : WHITE; // Titre de section en jaune
+      int textFontSize = (i == 0) ? 35 : 30;
+
+      int textWidth = MeasureText(creditsText[i], textFontSize);
+      DrawText(creditsText[i], (GetScreenWidth() - textWidth) / 2,
+               startY + i * spacing, textFontSize, textColor);
+    }
+
+    EndDrawing();
+  }
+
+  UnloadTexture(background);
 }

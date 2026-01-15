@@ -1,10 +1,12 @@
 #include "GameOver.h"
+#include "../dataCode/historicalGame.h"
+#include "../dataCode/user.h"
 #include <raylib.h>
 #include <stdio.h>
-#include "../dataCode/user.h"
+#include <stdlib.h>
 
-
-// Helper for button drawing (similar to menu.c but simplified or reused if we move it to a util)
+// Helper for button drawing (similar to menu.c but simplified or reused if we
+// move it to a util)
 static bool DrawStyledButton(Rectangle bounds, const char *text) {
   bool pressed = false;
   Vector2 mousePoint = GetMousePosition();
@@ -25,53 +27,86 @@ static bool DrawStyledButton(Rectangle bounds, const char *text) {
   return pressed;
 }
 
-void RunGameOver(int winnerId, User* users[]) {
-    // Determine winner text
-    const char* winnerText;
-    Color winnerColor;
+void RunGameOver(int winnerId, User *users[]) {
+  // Determine winner text
+  const char *winnerText;
+  Color winnerColor;
 
-    if (winnerId == -1) {
-        winnerText = "MATCH NUL !"; // Draw
-        winnerColor = WHITE;
-    } else {
-        winnerText = TextFormat("VICTOIRE DU JOUEUR %d !", winnerId + 1); // IDs are 0-indexed
-        winnerColor = GOLD;
-    }
+  if (winnerId == -1) {
+    winnerText = "MATCH NUL !"; // Draw
+    winnerColor = WHITE;
+  } else {
+    winnerText = TextFormat("VICTOIRE DU JOUEUR %d : %s !", winnerId + 1,
+                            users[winnerId]->username);
+    winnerColor = GOLD;
 
-    Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
+    // Save Game Result to History
+    if (users[0] && users[1]) { // Assume at least 2 players for score tracking
+      HistoricalGame *game =
+          createHistoricalGame(users[0]->username, users[1]->username,
+                               users[2] ? users[2]->username : "NULL",
+                               users[3] ? users[3]->username : "NULL");
 
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(BLACK);
+      // Set scores from current game stats
+      game->score1 = users[0]->currentScore;
+      game->score2 = users[1]->currentScore;
+      if (users[2])
+        game->score3 = users[2]->currentScore;
+      if (users[3])
+        game->score4 = users[3]->currentScore;
 
-        // Draw Background
-        DrawTexturePro(background,
-             (Rectangle){0, 0, background.width, background.height},
-             (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
-             (Vector2){0, 0}, 0.0f, WHITE);
-        
-        // Dark Overlay
-        DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+      whoWin(game, winnerId + 1); // +1 because ID 0 is Player 1
+      saveGame(game);
 
-        // Title
-        const char* title = "GAME OVER";
-        int titleSize = 60;
-        int titleW = MeasureText(title, titleSize);
-        DrawText(title, (GetScreenWidth() - titleW) / 2, 100, titleSize, RED);
-
-        // Winner Text
-        int winnerSize = 40;
-        int winnerW = MeasureText(winnerText, winnerSize);
-        DrawText(winnerText, (GetScreenWidth() - winnerW) / 2, 250, winnerSize, winnerColor);
-
-        // Menu Button
-        Rectangle btnRect = { (GetScreenWidth() - 200) / 2, 400, 200, 50 };
-        if (DrawStyledButton(btnRect, "RETOUR MENU")) {
-            break;
+      // Update User Stats
+      for (int i = 0; i < 4; i++) {
+        if (users[i]) {
+          incrementGame(users[i]);
+          incrementKill(users[i], users[i]->currentKills);
+          incrementDeath(users[i], users[i]->currentDeaths);
+          updateUserStats(users[i], users[i]->currentScore);
+          saveUser(users[i]); // Persist changes to users.txt
         }
-
-        EndDrawing();
+      }
+      free(game);
     }
-    
-    UnloadTexture(background);
+  }
+
+  Texture2D background = LoadTexture("src/Menu/images/background_start.jpg");
+
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    // Draw Background
+    DrawTexturePro(background,
+                   (Rectangle){0, 0, background.width, background.height},
+                   (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+
+    // Dark Overlay
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+
+    // Title
+    const char *title = "GAME OVER";
+    int titleSize = 60;
+    int titleW = MeasureText(title, titleSize);
+    DrawText(title, (GetScreenWidth() - titleW) / 2, 100, titleSize, RED);
+
+    // Winner Text
+    int winnerSize = 40;
+    int winnerW = MeasureText(winnerText, winnerSize);
+    DrawText(winnerText, (GetScreenWidth() - winnerW) / 2, 250, winnerSize,
+             winnerColor);
+
+    // Menu Button
+    Rectangle btnRect = {(GetScreenWidth() - 200) / 2, 400, 200, 50};
+    if (DrawStyledButton(btnRect, "RETOUR MENU")) {
+      break;
+    }
+
+    EndDrawing();
+  }
+
+  UnloadTexture(background);
 }

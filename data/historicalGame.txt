@@ -6,3 +6,12 @@ gameNum;usernameP1;usernameP2;usernameP3;usernameP4;scoreP1;scoreP2;scoreP3;scor
 5;Paulin;Hatem;NULL;NULL;60;70;0;0;1
 6;Paulin;Hatem;NULL;NULL;60;70;0;0;1
 7;Paulin;Hatem;NULL;NULL;60;70;0;0;2
+8;paulin;hatem;NULL;NULL;0;0;0;0;1
+9;paulin;hatem;NULL;NULL;0;0;0;0;1
+10;paulin;hatem;NULL;NULL;0;0;0;0;1
+11;paulin;hatem;NULL;NULL;0;0;0;0;1
+12;alice;hatem;NULL;NULL;0;0;0;0;1
+13;bob;oui;NULL;NULL;30;0;0;0;1
+14;hatem;paulin;alice;NULL;60;0;0;0;1
+15;J1;J2;NULL;NULL;40;0;0;0;1
+16;J1;J2;NULL;NULL;30;0;0;0;1

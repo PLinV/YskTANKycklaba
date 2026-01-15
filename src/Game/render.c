@@ -87,7 +87,7 @@ void tileMap(float dU, int *visualMap, int W, int H, Texture2D *textureArray) {
 Color playerColors[4] = {YELLOW, LIGHTGRAY, SKYBLUE, GREEN};
 
 void drawPlayers(float dU, player *players, int playerCount,
-                 Texture2D *textureArray) {
+                 Texture2D *textureArray, User *users[]) {
   Texture2D bodyTex = textureArray[12];
   Texture2D canonTex = textureArray[13];
 
@@ -125,9 +125,38 @@ void drawPlayers(float dU, player *players, int playerCount,
     DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2,
                   tankCenterPixels.y - bodyDrawSize / 2 - 10, bodyDrawSize, 5,
                   WHITE);
+    // Draw Username
+    Color healthColor = RED;
+    if (users && users[i]) {
+      // 0=BLUE, 1=RED, 2=GREEN, 3=ORANGE (GameSetup definitions)
+      // Standard Raylib colors: BLUE, RED, GREEN, ORANGE
+      switch (users[i]->currentSkinID) {
+      case 0:
+        healthColor = BLUE;
+        break;
+      case 1:
+        healthColor = RED;
+        break;
+      case 2:
+        healthColor = GREEN;
+        break;
+      case 3:
+        healthColor = ORANGE;
+        break;
+      default:
+        healthColor = RED;
+        break;
+      }
+
+      const char *name = users[i]->username;
+      int txtW = MeasureText(name, 10);
+      DrawText(name, tankCenterPixels.x - txtW / 2,
+               tankCenterPixels.y - bodyDrawSize / 2 - 22, 10, WHITE);
+    }
+
     DrawRectangle(tankCenterPixels.x - bodyDrawSize / 2,
                   tankCenterPixels.y - bodyDrawSize / 2 - 10,
-                  bodyDrawSize * (p->livesLeft / 3.0f), 5, RED);
+                  bodyDrawSize * (p->livesLeft / 3.0f), 5, healthColor);
   }
 }
 void drawProjectiles(float dU, projectileList *pr, Texture2D *textureArray) {

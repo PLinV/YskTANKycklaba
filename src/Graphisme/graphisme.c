@@ -13,6 +13,15 @@
 #define MAPS_DIR "src/Graphisme/Maps"
 #define ASSETS_BLOC_DIR "src/Graphisme/assets/texture_bloc"
 
+// --- THEME COLORS ---
+#define COL_BG_DARK (Color){30, 30, 30, 255}
+#define COL_PANEL (Color){45, 45, 48, 255}
+#define COL_ACCENT (Color){0, 122, 204, 255} // VS Code Blue
+#define COL_ACCENT_HOVER (Color){28, 151, 234, 255}
+#define COL_TEXT_WHITE (Color){240, 240, 240, 255}
+#define COL_TEXT_GRAY (Color){160, 160, 160, 255}
+#define COL_DANGER (Color){220, 50, 50, 255}
+
 // --- ENUMS ---
 typedef enum { MODE_VISUAL, MODE_COLLISION } EditorMode;
 
@@ -40,6 +49,9 @@ MapData currentMap;
 Rectangle mapDrawArea;
 EditorMode currentMode = MODE_VISUAL;
 bool isChoosingUnderlay = false;
+bool showOverwriteConfirmation = false;
+bool showDeleteConfirmation = false;
+char mapToDelete[64] = {0};
 
 // File Management
 FilePathList mapFiles;
@@ -60,9 +72,12 @@ void InitializeMapData(int width, int height);
 void InitializePalette(void);
 void LoadMapList(void);
 void LoadMap(const char *filename);
+void ForceSaveMap(void);
 void SaveMap(void);
+void DeleteMap(const char *filename);
 void ExportMapImage(void);
 void DrawUI(void);
+void DrawOverlay(void);
 void DrawSetupUI(void);
 void DrawMap(void);
 void UpdateMapTile(void);
@@ -73,10 +88,12 @@ bool GuiTextBox(Rectangle bounds, char *text, int textSize, bool editMode);
 // =========================================================================
 
 void RunEditor(void) {
-  SetWindowTitle("Raylib 2D Map Editor - Advanced");
+  SetWindowTitle("Map Editor");
 
   // --- FIX CRASH: Reset Global State on Entry ---
-  isSetupMode = true;
+  // --- FIX CRASH: Reset Global State on Entry ---
+  isSetupMode = false;
+  InitializeMapData(25, 16); // Default Size
   currentMode = MODE_VISUAL;
   editingWidth = false;
   editingHeight = false;
@@ -105,11 +122,13 @@ void RunEditor(void) {
     }
 
     if (!isSetupMode) {
-      if (IsKeyPressed(KEY_TAB)) {
-        currentMode =
-            (currentMode == MODE_VISUAL) ? MODE_COLLISION : MODE_VISUAL;
+      if (!showOverwriteConfirmation && !showDeleteConfirmation) {
+        if (IsKeyPressed(KEY_TAB)) {
+          currentMode =
+              (currentMode == MODE_VISUAL) ? MODE_COLLISION : MODE_VISUAL;
+        }
+        UpdateMapTile();
       }
-      UpdateMapTile();
     }
 
     // Reset isChoosingUnderlay if mode changes
@@ -128,12 +147,19 @@ void RunEditor(void) {
     if (isSetupMode) {
       DrawSetupUI();
     } else {
+      // Draw Layout Backgrounds
+      DrawRectangle(0, 0, uiWidth, sh, COL_PANEL);              // Left Panel
+      DrawRectangle(uiWidth, 0, sw - uiWidth, sh, COL_BG_DARK); // Map Area
+
       DrawUI();
       DrawMap();
-      DrawRectangleLines(mapDrawArea.x, mapDrawArea.y, mapDrawArea.width,
-                         mapDrawArea.height, DARKGRAY);
-      DrawText("Press BACKSPACE to return | TAB to switch mode", 10, sh - 30,
-               20, DARKGRAY);
+
+      // Map Border
+      DrawRectangleLinesEx(mapDrawArea, 2, BLACK);
+
+      DrawText("BACKSPACE: Return  |  TAB: Switch Mode", uiWidth + 20, sh - 30,
+               20, COL_TEXT_GRAY);
+      DrawOverlay();
     }
 
     EndDrawing();
@@ -392,7 +418,7 @@ void LoadMap(const char *filename) {
     *dot = '\0';
 }
 
-void SaveMap(void) {
+void ForceSaveMap(void) {
   char path[256];
   sprintf(path, "%s/%s.txt", MAPS_DIR, currentMapName);
 
@@ -432,7 +458,41 @@ void SaveMap(void) {
   fclose(file);
 
   ExportMapImage();
+  ExportMapImage();
   LoadMapList(); // Refresh list
+  showOverwriteConfirmation = false;
+}
+
+void SaveMap(void) {
+  char path[256];
+  sprintf(path, "%s/%s.txt", MAPS_DIR, currentMapName);
+
+  if (FileExists(path)) {
+    showOverwriteConfirmation = true;
+  } else {
+    ForceSaveMap();
+  }
+}
+
+void DeleteMap(const char *filename) {
+  char pathTxt[256];
+  char pathPng[256];
+
+  // Construct paths
+  sprintf(pathTxt, "%s/%s.txt", MAPS_DIR, filename);
+  sprintf(pathPng, "%s/%s.png", MAPS_DIR, filename);
+
+  // Delete files
+  if (FileExists(pathTxt))
+    remove(pathTxt);
+  if (FileExists(pathPng))
+    remove(pathPng);
+
+  // Refresh
+  LoadMapList();
+  selectedFileIndex = -1; // Deselect
+  showDeleteConfirmation = false;
+  memset(mapToDelete, 0, 64);
 }
 
 void ExportMapImage(void) {
@@ -537,102 +597,146 @@ void ResizeMap(int dW, int dH) {
 }
 
 void DrawUI(void) {
-  int y = 10;
-  DrawText("MAP EDITOR", 10, y, 20, DARKGRAY);
-  y += 30;
+  int x = 20;
+  int y = 20;
+  int w = 360; // Panel width is ~400, leaving margin
+
+  DrawText("MAP EDITOR", x, y, 30, COL_TEXT_WHITE);
+  y += 50;
 
   // --- TABS ---
-  int tabW = 150;
-  if (GuiButton((Rectangle){10, (float)y, (float)tabW, 30},
-                currentMode == MODE_VISUAL ? "[ VISUAL ]" : "VISUAL")) {
+  int tabW = (w - 10) / 2;
+
+  // Custom Tab Buttons
+  if (GuiButton((Rectangle){(float)x, (float)y, (float)tabW, 40}, "VISUAL"))
     currentMode = MODE_VISUAL;
-  }
-  if (GuiButton((Rectangle){(float)10 + tabW + 10, (float)y, (float)tabW, 30},
-                currentMode == MODE_COLLISION ? "[ COLLISION ]"
-                                              : "COLLISION")) {
+  if (currentMode == MODE_VISUAL)
+    DrawRectangle((float)x, (float)y + 35, (float)tabW, 5, COL_TEXT_WHITE);
+
+  if (GuiButton((Rectangle){(float)x + tabW + 10, (float)y, (float)tabW, 40},
+                "COLLISION"))
     currentMode = MODE_COLLISION;
-  }
-  y += 40;
+  if (currentMode == MODE_COLLISION)
+    DrawRectangle((float)x + tabW + 10, (float)y + 35, (float)tabW, 5,
+                  COL_TEXT_WHITE);
+
+  y += 60;
 
   // --- FILE LIST ---
-  DrawText("Saved Maps:", 10, y, 10, GRAY);
-  y += 15;
+  DrawText("SAVED MAPS", x, y, 20, COL_TEXT_GRAY);
+  y += 30;
+
+  // Scrollable area background (simulation)
+  DrawRectangle(x, y, w, 200, (Color){30, 30, 30, 100});
+  int listY = y + 5;
+
   for (int i = 0; i < (int)mapFiles.count; i++) {
     if (GetFileExtension(mapFiles.paths[i]) &&
         strcmp(GetFileExtension(mapFiles.paths[i]), ".txt") == 0) {
-      Rectangle rect = {10, (float)y, 200, 20};
-      bool isSelected = (selectedFileIndex == i);
 
-      if (CheckCollisionPointRec(GetMousePosition(), rect)) {
-        DrawRectangleRec(rect, LIGHTGRAY);
+      bool isSelected = (selectedFileIndex == i);
+      Rectangle rowRect = {(float)x, (float)listY, (float)w, 30};
+
+      // Selection Highlight
+      if (isSelected)
+        DrawRectangleRec(rowRect, (Color){60, 60, 60, 255});
+
+      if (CheckCollisionPointRec(GetMousePosition(), rowRect)) {
+        DrawRectangleRec(rowRect, (Color){80, 80, 80, 50}); // Hover
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-          selectedFileIndex = i;
-          LoadMap(GetFileName(mapFiles.paths[i]));
-          isSetupMode = false;
+          if (!CheckCollisionPointRec(
+                  GetMousePosition(),
+                  (Rectangle){(float)x + w - 30, (float)listY, 30, 30})) {
+            selectedFileIndex = i;
+            LoadMap(GetFileName(mapFiles.paths[i]));
+            isSetupMode = false;
+          }
         }
       }
 
-      DrawText(GetFileName(mapFiles.paths[i]), 15, y + 2, 10,
-               isSelected ? BLUE : BLACK);
-      y += 20;
+      DrawText(GetFileName(mapFiles.paths[i]), x + 10, listY + 8, 20,
+               COL_TEXT_WHITE);
+
+      // Delete Button (Align Right)
+      Rectangle delRect = {(float)x + w - 30, (float)listY + 5, 20, 20};
+      if (CheckCollisionPointRec(GetMousePosition(), delRect)) {
+        DrawRectangleRec(delRect, COL_DANGER);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+          strncpy(mapToDelete, GetFileName(mapFiles.paths[i]), 63);
+          char *dot = strrchr(mapToDelete, '.');
+          if (dot)
+            *dot = '\0';
+          showDeleteConfirmation = true;
+        }
+      } else {
+        DrawRectangleLinesEx(delRect, 1, COL_DANGER);
+      }
+      DrawText("X", delRect.x + 6, delRect.y + 2, 10, WHITE);
+
+      listY += 30;
+      if (listY > y + 200)
+        break; // Clip
     }
   }
-  y += 10;
+  y += 220;
 
   // --- NAME & SAVE ---
-  DrawText("Map Name:", 10, y, 10, GRAY);
-  y += 15;
-  if (GuiTextBox((Rectangle){10, (float)y, 200, 30}, currentMapName, 64,
-                 isRenaming)) {
+  DrawText("NAME", x, y, 20, COL_TEXT_GRAY);
+  if (GuiTextBox((Rectangle){(float)x + 60, (float)y - 5, (float)w - 60, 35},
+                 currentMapName, 64, isRenaming)) {
     isRenaming = !isRenaming;
   }
-  y += 35;
+  y += 45;
 
-  if (GuiButton((Rectangle){10, (float)y, 100, 30}, "SAVE ALL")) {
+  if (GuiButton((Rectangle){(float)x, (float)y, (float)w, 40},
+                "SAVE CURRENT MAP")) {
     SaveMap();
   }
-  y += 40;
+  y += 60;
 
   // --- RESIZE CONTROLS ---
-  DrawText("Resize Map:", 10, y, 10, GRAY);
-  y += 15;
-  DrawText(TextFormat("W: %d", currentMap.width), 10, y + 5, 10, BLACK);
-  if (GuiButton((Rectangle){60, (float)y, 20, 20}, "-"))
-    ResizeMap(-1, 0);
-  if (GuiButton((Rectangle){85, (float)y, 20, 20}, "+"))
-    ResizeMap(1, 0);
-
-  DrawText(TextFormat("H: %d", currentMap.height), 120, y + 5, 10, BLACK);
-  if (GuiButton((Rectangle){170, (float)y, 20, 20}, "-"))
-    ResizeMap(0, -1);
-  if (GuiButton((Rectangle){195, (float)y, 20, 20}, "+"))
-    ResizeMap(0, 1);
+  DrawText("DIMENSIONS", x, y, 20, COL_TEXT_GRAY);
   y += 30;
 
-  // --- UNDERLAY SELECTOR (REPLACER) ---
-  DrawText("Destructible Replace Texture:", 10, y, 10, GRAY);
-  y += 20;
+  // Width Control
+  DrawText(TextFormat("W: %02d", currentMap.width), x, y + 10, 20,
+           COL_TEXT_WHITE);
+  if (GuiButton((Rectangle){(float)x + 70, (float)y, 30, 30}, "-"))
+    ResizeMap(-1, 0);
+  if (GuiButton((Rectangle){(float)x + 105, (float)y, 30, 30}, "+"))
+    ResizeMap(1, 0);
 
+  // Height Control
+  DrawText(TextFormat("H: %02d", currentMap.height), x + 160, y + 10, 20,
+           COL_TEXT_WHITE);
+  if (GuiButton((Rectangle){(float)x + 230, (float)y, 30, 30}, "-"))
+    ResizeMap(0, -1);
+  if (GuiButton((Rectangle){(float)x + 265, (float)y, 30, 30}, "+"))
+    ResizeMap(0, 1);
+  y += 50;
+
+  // --- UNDERLAY SELECTOR ---
+  DrawText("DESTRUCTION REPLACE", x, y, 20, COL_TEXT_GRAY);
+  y += 30;
   // Find current underlay texture
-  Texture2D underlayTex = palette[0].texture; // Default
-  for (int i = 0; i < MAX_BLOCK_TYPES; i++) {
+  Texture2D underlayTex = palette[0].texture;
+  for (int i = 0; i < MAX_BLOCK_TYPES; i++)
     if (palette[i].id == currentMap.underlayId) {
       underlayTex = palette[i].texture;
       break;
     }
-  }
 
-  Rectangle rSetup = {10, (float)y, 50, 50};
+  Rectangle rSetup = {(float)x, (float)y, 40, 40};
   DrawTexturePro(
       underlayTex,
       (Rectangle){0, 0, (float)underlayTex.width, (float)underlayTex.height},
       rSetup, (Vector2){0, 0}, 0, WHITE);
 
   if (isChoosingUnderlay) {
-    DrawRectangleLinesEx(rSetup, 3, GREEN);
-    DrawText("SELECT BELOW...", 70, y + 20, 10, GREEN);
+    DrawRectangleLinesEx(rSetup, 3, COL_ACCENT);
+    DrawText("CLICK TILE BELOW...", x + 50, y + 12, 10, COL_ACCENT);
   } else {
-    DrawRectangleLinesEx(rSetup, 1, DARKGRAY);
+    DrawRectangleLinesEx(rSetup, 1, COL_TEXT_GRAY);
     if (CheckCollisionPointRec(GetMousePosition(), rSetup) &&
         IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
       isChoosingUnderlay = !isChoosingUnderlay;
@@ -640,16 +744,16 @@ void DrawUI(void) {
   }
   y += 60;
 
-  // --- PALETTE / COLLISION TOOLS ---
+  // --- PALETTE / TOOLS ---
   if (currentMode == MODE_VISUAL) {
-    DrawText("Visual Palette:", 10, y, 10, GRAY);
-    y += 15;
-    int px = 10;
+    DrawText("PALETTE", x, y, 20, COL_TEXT_GRAY);
+    y += 30;
+    int px = x;
     int py = y;
 
     for (int i = 0; i < MAX_BLOCK_TYPES; i++) {
       if (palette[i].id == -1)
-        continue; // Skip empty
+        continue;
 
       Rectangle pRect = {(float)px, (float)py, 40, 40};
       DrawTexturePro(palette[i].texture,
@@ -658,61 +762,49 @@ void DrawUI(void) {
                      pRect, (Vector2){0, 0}, 0, WHITE);
 
       if (selectedBlockId == palette[i].id && !isChoosingUnderlay)
-        DrawRectangleLinesEx(pRect, 2, RED);
+        DrawRectangleLinesEx(pRect, 3, COL_ACCENT);
+      else if (CheckCollisionPointRec(GetMousePosition(), pRect))
+        DrawRectangleLinesEx(pRect, 1, WHITE); // Hover
 
-      // Logic for selection or underlay choice
       if (CheckCollisionPointRec(GetMousePosition(), pRect) &&
           IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (isChoosingUnderlay) {
           currentMap.underlayId = palette[i].id;
-          isChoosingUnderlay = false; // Auto-exit selection mode
+          isChoosingUnderlay = false;
         } else {
           selectedBlockId = palette[i].id;
         }
       }
-
       px += 45;
-      if (px > 350) {
-        px = 10;
+      if (px > x + w - 40) {
+        px = x;
         py += 45;
       }
     }
   } else {
-    DrawText("Collision Types:", 10, y, 10, GRAY);
-    y += 15;
+    DrawText("COLLISION TYPES", x, y, 20, COL_TEXT_GRAY);
+    y += 30;
 
-    // Wall Button
-    Rectangle rWall = {10, (float)y, 80, 30};
-    if (selectedCollisionType == 1)
-      DrawRectangleRec(rWall, LIGHTGRAY);
-    DrawRectangleLinesEx(rWall, 1, RED);
-    DrawText("WALL", 30, y + 10, 10, RED);
-    if (CheckCollisionPointRec(GetMousePosition(), rWall) &&
-        IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-      selectedCollisionType = 1;
+    const char *names[] = {"WALL", "DESTR", "SPAWN"};
+    Color colors[] = {RED, GREEN, BLUE};
+    int ids[] = {1, 2, 3};
 
-    // Destructible Button
-    Rectangle rDest = {100, (float)y, 80, 30};
-    if (selectedCollisionType == 2)
-      DrawRectangleRec(rDest, LIGHTGRAY);
-    DrawRectangleLinesEx(rDest, 1, GREEN);
-    DrawText("DESTRUCT", 110, y + 10, 10, GREEN);
-    if (CheckCollisionPointRec(GetMousePosition(), rDest) &&
-        IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-      selectedCollisionType = 2;
+    for (int i = 0; i < 3; i++) {
+      Rectangle btn = {(float)x, (float)y, 100.0f, 40.0f};
+      bool active = (selectedCollisionType == ids[i]);
 
-    // Spawn Button
-    Rectangle rSpawn = {190, (float)y, 80, 30};
-    if (selectedCollisionType == 3)
-      DrawRectangleRec(rSpawn, LIGHTGRAY);
-    DrawRectangleLinesEx(rSpawn, 1, BLUE);
-    DrawText("SPAWN", 200, y + 10, 10, BLUE);
-    if (CheckCollisionPointRec(GetMousePosition(), rSpawn) &&
-        IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-      selectedCollisionType = 3;
+      if (active)
+        DrawRectangleRec(btn, Fade(colors[i], 0.3f));
+      DrawRectangleLinesEx(btn, 2, colors[i]);
+      DrawText(names[i], btn.x + 10, btn.y + 10, 20, colors[i]);
 
-    y += 40;
-    DrawText("Right Click to Clear", 10, y, 10, DARKGRAY);
+      if (CheckCollisionPointRec(GetMousePosition(), btn) &&
+          IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        selectedCollisionType = ids[i];
+      }
+      x += 110;
+    }
+    DrawText("RIGHT CLICK TO ERASE", 20, y + 50, 20, COL_TEXT_GRAY);
   }
 }
 
@@ -848,3 +940,55 @@ void UpdateMapDimensions(int newWidth, int newHeight) {
   InitializeMapData(newWidth, newHeight);
 }
 void ExportCollisionMap(const char *filename) {} // Unused, replaced by SaveMap
+
+void DrawOverlay(void) {
+  if (showOverwriteConfirmation) {
+    // Draw Modal
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
+                  (Color){0, 0, 0, 100});
+    int boxW = 300, boxH = 150;
+    int boxX = (GetScreenWidth() - boxW) / 2;
+    int boxY = (GetScreenHeight() - boxH) / 2;
+
+    DrawRectangle(boxX, boxY, boxW, boxH, RAYWHITE);
+    DrawRectangleLines(boxX, boxY, boxW, boxH, BLACK);
+
+    DrawText("OVERWRITE MAP?", boxX + 60, boxY + 30, 20, RED);
+    DrawText(currentMapName, boxX + (300 - MeasureText(currentMapName, 20)) / 2,
+             boxY + 60, 20, DARKGRAY);
+
+    if (GuiButton((Rectangle){(float)boxX + 20, (float)boxY + 100, 100, 30},
+                  "YES")) {
+      ForceSaveMap();
+    }
+    if (GuiButton((Rectangle){(float)boxX + 180, (float)boxY + 100, 100, 30},
+                  "NO")) {
+      showOverwriteConfirmation = false;
+    }
+  }
+
+  if (showDeleteConfirmation) {
+    // Draw Modal
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
+                  (Color){0, 0, 0, 100});
+    int boxW = 300, boxH = 150;
+    int boxX = (GetScreenWidth() - boxW) / 2;
+    int boxY = (GetScreenHeight() - boxH) / 2;
+
+    DrawRectangle(boxX, boxY, boxW, boxH, RAYWHITE);
+    DrawRectangleLines(boxX, boxY, boxW, boxH, BLACK);
+
+    DrawText("DELETE MAP?", boxX + 80, boxY + 30, 20, RED);
+    DrawText(mapToDelete, boxX + (300 - MeasureText(mapToDelete, 20)) / 2,
+             boxY + 60, 20, DARKGRAY);
+
+    if (GuiButton((Rectangle){(float)boxX + 20, (float)boxY + 100, 100, 30},
+                  "YES")) {
+      DeleteMap(mapToDelete);
+    }
+    if (GuiButton((Rectangle){(float)boxX + 180, (float)boxY + 100, 100, 30},
+                  "NO")) {
+      showDeleteConfirmation = false;
+    }
+  }
+}

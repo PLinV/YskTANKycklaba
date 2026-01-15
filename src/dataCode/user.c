@@ -5,12 +5,12 @@
 #define INITIAL_CAPACITY 10
 #define USER_DATA_FILE "data/users.txt" // peut être a modifier
 
-//gcc \
+/* gcc \
   YskTANKycklaba/src/dataCode/user.c \
   -o user \
   -Iraylib/src \
   raylib/src/libraylib.a \
-  -lm -lpthread -ldl -lrt -lX11 -lGL
+  -lm -lpthread -ldl -lrt -lX11 -lGL */
 
 // le tableau qui va stocker les deux users (on pourra essayer de faire avec
 // trois)
@@ -33,6 +33,9 @@ User *createUser(const char *newUsername) {
   newUser->maxScore = 0;
   newUser->kill = 0;
   newUser->death = 0;
+  newUser->currentScore = 0;
+  newUser->currentKills = 0;
+  newUser->currentDeaths = 0;
   return newUser;
 }
 
@@ -170,13 +173,17 @@ User *getOrCreateUser(const char *getUsername) {
   return userFound;
 }
 
-void updateUserStats(User *u, int newMaxScore) { u->maxScore = newMaxScore; }
+void updateUserStats(User *u, int newMaxScore) {
+  if (newMaxScore > u->maxScore) {
+    u->maxScore = newMaxScore;
+  }
+}
 
 void incrementGame(User *u) { u->gamePlayed++; }
 
-void incrementDeath(User *u) { u->death++; }
+void incrementDeath(User *u, int amount) { u->death += amount; }
 
-void incrementKill(User *u) { u->kill++; }
+void incrementKill(User *u, int amount) { u->kill += amount; }
 
 // save l'user dans le txt
 int saveUser(User *u1) {
