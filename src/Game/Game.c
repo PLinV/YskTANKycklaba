@@ -315,7 +315,7 @@ void actions(player *players, int pC, projectileList *pr)
             int g = p->move.controllerIndex;
             if (IsGamepadButtonPressed(g, 12))
             {
-                float speed = p->powerUp.sniper ? 0.3f : 0.15f;
+                float speed = p->powerUp.sniper ? 0.35f : 0.15f;
                 spawnBullet(*p, pr, -1.0f, 0.5f, 2, speed);
                 p->shootTimer = 15;
                 didShoot = true;
@@ -325,7 +325,7 @@ void actions(player *players, int pC, projectileList *pr)
         // keyboard shoot
         if (!didShoot && IsKeyPressed(p->move.keyShoot) && !p->powerUp.machineGun)
         {
-            float speed = p->powerUp.sniper ? 0.3f : 0.15f;
+            float speed = p->powerUp.sniper ? 0.35f : 0.15f;
             spawnBullet(*p, pr, -1.0f, 0.5f, 2, speed);
             p->shootTimer = 15;
             didShoot = true;
@@ -336,8 +336,8 @@ void actions(player *players, int pC, projectileList *pr)
         {
             // random spread
             float random_orientation = p->aimOrientation + (float)(rand() % 40) - 20.0f;
-            spawnBullet(*p, pr, random_orientation, 0.3f, 0, 0.15f);
-            p->shootTimer = 3;
+            spawnBullet(*p, pr, random_orientation, 0.4f, 0, 0.15f);
+            p->shootTimer = 7;
         }
     }
 }
@@ -347,16 +347,16 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
     switch (pu->index)
     {
     case 0: // increase player speed
-        p->speed = 0.15f;
-        p->powerUp.timer = 60 * 10;
+        p->speed = 0.17f;
+        p->powerUp.timer = 60 * 7;
         break;
     case 1: // increase bullet speed
         p->powerUp.sniper = true;
-        p->powerUp.timer = 60 * 10;
+        p->powerUp.timer = 60 * 7;
         break;
     case 2: // machine gun
         p->powerUp.machineGun = true;
-        p->powerUp.timer = 60 * 10;
+        p->powerUp.timer = 60 * 7;
         break;
     case 3: // spawn dvd enemy (projectile)
     {
@@ -364,15 +364,15 @@ void givePowerUp(player *p, powerUp *pu, projectileList *pr)
         float rad = p->aimOrientation * PI / 180.0f;
         float sx = speed * cosf(rad);
         float sy = speed * sinf(rad);
-        projectile dvd = {p->playerId, pu->posX + 1.f, pu->posY + 1.f, sx, sy, p->aimOrientation, 1.5f, 35};
+        projectile dvd = {p->playerId, pu->posX + 1.f, pu->posY + 1.f, sx, sy, p->aimOrientation, 1.5f, 15};
         listAdd(pr, dvd);
         break;
     }
     case 4: // bomb
-        for (int i = 0; i < 48; i++)
+        for (int i = 0; i < 36; i++)
         {
             float size = (float)(rand() % 9) / 10.0f;
-            spawnBullet(*p, pr, i * 7.5f, size, 1, 0.1f);
+            spawnBullet(*p, pr, i * 10.0f, size, 1, 0.1f);
         }
         break;
     case 5: // life
@@ -449,7 +449,7 @@ void powerUps(powerUp *pu, char *map, player *p, int pC, projectileList *pr, int
             {
                 givePowerUp(pla, pu, pr);
                 pu->posY = 1000000.0f;
-                pu->timer = 60 * 1;
+                pu->timer = 60 * 10;
                 pu->hasSpawnYet = false;
             }
         }
