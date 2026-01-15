@@ -16,8 +16,8 @@
 // --- THEME COLORS ---
 #define COL_BG_DARK (Color){30, 30, 30, 255}
 #define COL_PANEL (Color){45, 45, 48, 255}
-#define COL_ACCENT (Color){0, 122, 204, 255} // VS Code Blue
-#define COL_ACCENT_HOVER (Color){28, 151, 234, 255}
+#define COL_ACCENT (Color){255, 165, 0, 255} // Orange
+#define COL_ACCENT_HOVER (Color){255, 200, 0, 255} // Yellow-Orange Hover
 #define COL_TEXT_WHITE (Color){240, 240, 240, 255}
 #define COL_TEXT_GRAY (Color){160, 160, 160, 255}
 #define COL_DANGER (Color){220, 50, 50, 255}
@@ -187,24 +187,39 @@ void DrawSetupUI(void) {
   int cx = sw / 2;
   int cy = sh / 2;
 
-  DrawText("NEW MAP SETUP", cx - 100, cy - 150, 30, DARKGRAY);
+  // Modern Background Panel
+  DrawRectangleRounded((Rectangle){cx - 200, cy - 200, 400, 400}, 0.1f, 10, COL_PANEL);
+  DrawRectangleRoundedLines((Rectangle){cx - 200, cy - 200, 400, 400}, 0.1f, 10, COL_ACCENT);
 
-  DrawText("Width:", cx - 100, cy - 80, 20, GRAY);
-  if (GuiTextBox((Rectangle){(float)cx, (float)cy - 85, 100, 30}, widthBuffer,
-                 16, editingWidth)) {
+  DrawText("NEW MAP SETUP", cx - 90, cy - 170, 26, COL_TEXT_WHITE);
+
+  // Width Input
+  DrawText("Width:", cx - 150, cy - 100, 20, COL_TEXT_GRAY);
+  Rectangle rWidth = {cx - 50, cy - 105, 120, 35};
+  DrawRectangleRounded(rWidth, 0.2f, 5, editingWidth ? COL_ACCENT : DARKGRAY);
+  // Inner box
+  DrawRectangleRounded((Rectangle){rWidth.x+2, rWidth.y+2, rWidth.width-4, rWidth.height-4}, 0.2f, 5, (Color){30,30,30,255});
+  
+  if (GuiTextBox(rWidth, widthBuffer, 16, editingWidth)) {
     editingWidth = !editingWidth;
     editingHeight = false;
   }
 
-  DrawText("Height:", cx - 100, cy - 40, 20, GRAY);
-  if (GuiTextBox((Rectangle){(float)cx, (float)cy - 45, 100, 30}, heightBuffer,
-                 16, editingHeight)) {
+  // Height Input
+  DrawText("Height:", cx - 150, cy - 50, 20, COL_TEXT_GRAY);
+  Rectangle rHeight = {cx - 50, cy - 55, 120, 35};
+  DrawRectangleRounded(rHeight, 0.2f, 5, editingHeight ? COL_ACCENT : DARKGRAY);
+  DrawRectangleRounded((Rectangle){rHeight.x+2, rHeight.y+2, rHeight.width-4, rHeight.height-4}, 0.2f, 5, (Color){30,30,30,255});
+
+  if (GuiTextBox(rHeight, heightBuffer, 16, editingHeight)) {
     editingHeight = !editingHeight;
     editingWidth = false;
   }
 
-  if (GuiButton((Rectangle){(float)cx - 50, (float)cy + 20, 100, 40},
-                "CREATE")) {
+  // Create Button
+  Rectangle btnCreate = {(float)cx - 60, (float)cy + 20, 120, 40};
+  DrawRectangleRounded(btnCreate, 0.3f, 6, CheckCollisionPointRec(GetMousePosition(), btnCreate) ? COL_ACCENT_HOVER : COL_ACCENT);
+  if (CheckCollisionPointRec(GetMousePosition(), btnCreate) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     int w = atoi(widthBuffer);
     int h = atoi(heightBuffer);
     if (w > 0 && h > 0) {
@@ -212,24 +227,28 @@ void DrawSetupUI(void) {
       isSetupMode = false;
     }
   }
+  int txtW = MeasureText("CREATE", 20);
+  DrawText("CREATE", btnCreate.x + (btnCreate.width-txtW)/2, btnCreate.y + 10, 20, WHITE);
 
-  DrawText("OR Load Existing Map:", cx - 100, cy + 80, 20, GRAY);
+  DrawText("OR Load Existing Map:", cx - 150, cy + 90, 20, COL_TEXT_GRAY);
 
-  // List existing maps
-  int y = cy + 110;
+  // List existing maps - Compact
+  int y = cy + 120;
   for (int i = 0; i < (int)mapFiles.count; i++) {
     if (GetFileExtension(mapFiles.paths[i]) &&
         strcmp(GetFileExtension(mapFiles.paths[i]), ".txt") == 0) {
-      Rectangle rect = {(float)cx - 100, (float)y, 200, 20};
-      if (CheckCollisionPointRec(GetMousePosition(), rect)) {
-        DrawRectangleRec(rect, LIGHTGRAY);
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      Rectangle rect = {(float)cx - 150, (float)y, 300, 24};
+      bool hover = CheckCollisionPointRec(GetMousePosition(), rect);
+      
+      DrawRectangleRounded(rect, 0.2f, 4, hover ? (Color){60,60,60,255} : (Color){40,40,40,255});
+      
+      if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
           LoadMap(GetFileName(mapFiles.paths[i]));
           isSetupMode = false;
-        }
       }
-      DrawText(GetFileName(mapFiles.paths[i]), cx - 90, y + 2, 10, BLACK);
-      y += 20;
+      DrawText(GetFileName(mapFiles.paths[i]), rect.x + 10, rect.y + 4, 16, COL_TEXT_WHITE);
+      y += 28;
+      if (y > cy + 180) break; 
     }
   }
 }
@@ -601,33 +620,39 @@ void DrawUI(void) {
   int y = 20;
   int w = 360; // Panel width is ~400, leaving margin
 
-  DrawText("MAP EDITOR", x, y, 30, COL_TEXT_WHITE);
+  DrawText("MAP EDITOR", x, y, 32, COL_ACCENT);
+  DrawRectangle(x, y + 36, w, 2, COL_ACCENT); 
   y += 50;
 
   // --- TABS ---
   int tabW = (w - 10) / 2;
 
   // Custom Tab Buttons
-  if (GuiButton((Rectangle){(float)x, (float)y, (float)tabW, 40}, "VISUAL"))
-    currentMode = MODE_VISUAL;
-  if (currentMode == MODE_VISUAL)
-    DrawRectangle((float)x, (float)y + 35, (float)tabW, 5, COL_TEXT_WHITE);
+  Color colVis = (currentMode == MODE_VISUAL) ? COL_ACCENT : COL_PANEL;
+  Color colCol = (currentMode == MODE_COLLISION) ? COL_ACCENT : COL_PANEL;
+  
+  Rectangle rVis = {(float)x, (float)y, (float)tabW, 40};
+  DrawRectangleRounded(rVis, 0.3f, 6, colVis);
+  DrawRectangleRoundedLines(rVis, 0.3f, 6, COL_TEXT_GRAY);
+  DrawText("VISUEL", rVis.x + tabW/2 - MeasureText("VISUAL", 20)/2, rVis.y + 10, 20, (currentMode == MODE_VISUAL) ? WHITE : GRAY);
+  if (CheckCollisionPointRec(GetMousePosition(), rVis) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+      currentMode = MODE_VISUAL;
 
-  if (GuiButton((Rectangle){(float)x + tabW + 10, (float)y, (float)tabW, 40},
-                "COLLISION"))
-    currentMode = MODE_COLLISION;
-  if (currentMode == MODE_COLLISION)
-    DrawRectangle((float)x + tabW + 10, (float)y + 35, (float)tabW, 5,
-                  COL_TEXT_WHITE);
+  Rectangle rCol = {(float)x + tabW + 10, (float)y, (float)tabW, 40};
+  DrawRectangleRounded(rCol, 0.3f, 6, colCol);
+  DrawRectangleRoundedLines(rCol, 0.3f, 6, COL_TEXT_GRAY);
+  DrawText("COLLISION", rCol.x + tabW/2 - MeasureText("COLLISION", 20)/2, rCol.y + 10, 20, (currentMode == MODE_COLLISION) ? WHITE : GRAY);
+  if (CheckCollisionPointRec(GetMousePosition(), rCol) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+      currentMode = MODE_COLLISION;
 
   y += 60;
 
   // --- FILE LIST ---
-  DrawText("SAVED MAPS", x, y, 20, COL_TEXT_GRAY);
-  y += 30;
+  DrawText("MAPS ENREGISTRES", x, y, 18, COL_TEXT_GRAY);
+  y += 25;
 
-  // Scrollable area background (simulation)
-  DrawRectangle(x, y, w, 200, (Color){30, 30, 30, 100});
+  // Scrollable container look
+  DrawRectangleRounded((Rectangle){x, y, w, 200}, 0.1f, 8, (Color){20, 20, 20, 150});
   int listY = y + 5;
 
   for (int i = 0; i < (int)mapFiles.count; i++) {
@@ -635,88 +660,102 @@ void DrawUI(void) {
         strcmp(GetFileExtension(mapFiles.paths[i]), ".txt") == 0) {
 
       bool isSelected = (selectedFileIndex == i);
-      Rectangle rowRect = {(float)x, (float)listY, (float)w, 30};
+      Rectangle rowRect = {(float)x + 5, (float)listY, (float)w - 10, 30};
 
-      // Selection Highlight
-      if (isSelected)
-        DrawRectangleRec(rowRect, (Color){60, 60, 60, 255});
-
+      Color bgRow = isSelected ? COL_ACCENT : (Color){0,0,0,0};
       if (CheckCollisionPointRec(GetMousePosition(), rowRect)) {
-        DrawRectangleRec(rowRect, (Color){80, 80, 80, 50}); // Hover
+        if (!isSelected) bgRow = (Color){50,50,50,200};
+        
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
           if (!CheckCollisionPointRec(
                   GetMousePosition(),
-                  (Rectangle){(float)x + w - 30, (float)listY, 30, 30})) {
+                  (Rectangle){(float)x + w - 35, (float)listY + 2, 26, 26})) {
             selectedFileIndex = i;
             LoadMap(GetFileName(mapFiles.paths[i]));
             isSetupMode = false;
           }
         }
       }
-
-      DrawText(GetFileName(mapFiles.paths[i]), x + 10, listY + 8, 20,
-               COL_TEXT_WHITE);
+      
+      DrawRectangleRounded(rowRect, 0.2f, 4, bgRow);
+      DrawText(GetFileName(mapFiles.paths[i]), x + 15, listY + 7, 18, COL_TEXT_WHITE);
 
       // Delete Button (Align Right)
-      Rectangle delRect = {(float)x + w - 30, (float)listY + 5, 20, 20};
-      if (CheckCollisionPointRec(GetMousePosition(), delRect)) {
-        DrawRectangleRec(delRect, COL_DANGER);
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-          strncpy(mapToDelete, GetFileName(mapFiles.paths[i]), 63);
-          char *dot = strrchr(mapToDelete, '.');
-          if (dot)
-            *dot = '\0';
-          showDeleteConfirmation = true;
-        }
-      } else {
-        DrawRectangleLinesEx(delRect, 1, COL_DANGER);
+      Rectangle delRect = {(float)x + w - 35, (float)listY + 2, 26, 26};
+      bool hoverDel = CheckCollisionPointRec(GetMousePosition(), delRect);
+      DrawRectangleRounded(delRect, 0.3f, 4, hoverDel ? COL_DANGER : (Color){60,60,60,255});
+      DrawText("X", delRect.x + 8, delRect.y + 4, 18, WHITE);
+        
+      if (hoverDel && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        strncpy(mapToDelete, GetFileName(mapFiles.paths[i]), 63);
+        char *dot = strrchr(mapToDelete, '.');
+        if (dot) *dot = '\0';
+        showDeleteConfirmation = true;
       }
-      DrawText("X", delRect.x + 6, delRect.y + 2, 10, WHITE);
 
-      listY += 30;
-      if (listY > y + 200)
+      listY += 32;
+      if (listY > y + 190)
         break; // Clip
     }
   }
   y += 220;
 
   // --- NAME & SAVE ---
-  DrawText("NAME", x, y, 20, COL_TEXT_GRAY);
-  if (GuiTextBox((Rectangle){(float)x + 60, (float)y - 5, (float)w - 60, 35},
-                 currentMapName, 64, isRenaming)) {
+  DrawText("NOM", x, y, 18, COL_TEXT_GRAY);
+  
+  Rectangle rName = {(float)x + 70, (float)y - 5, (float)w - 70, 35};
+  DrawRectangleRounded(rName, 0.2f, 5, isRenaming ? COL_ACCENT : (Color){20,20,20,255});
+  DrawRectangleRounded((Rectangle){rName.x+2, rName.y+2, rName.width-4, rName.height-4}, 0.2f, 5, (Color){40,40,40,255});
+  
+  if (GuiTextBox(rName, currentMapName, 64, isRenaming)) {
     isRenaming = !isRenaming;
   }
   y += 45;
 
-  if (GuiButton((Rectangle){(float)x, (float)y, (float)w, 40},
-                "SAVE CURRENT MAP")) {
+  Rectangle rSave = {(float)x, (float)y, (float)w, 40};
+  bool hoverSave = CheckCollisionPointRec(GetMousePosition(), rSave);
+  DrawRectangleRounded(rSave, 0.3f, 6, hoverSave ? COL_ACCENT_HOVER : COL_ACCENT);
+  DrawText("SAUVEGARDER LA MAP", x + w/2 - MeasureText("SAUVEGARDER LA MAP", 20)/2, y + 10, 20, WHITE);
+  
+  if (hoverSave && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     SaveMap();
   }
   y += 60;
 
   // --- RESIZE CONTROLS ---
-  DrawText("DIMENSIONS", x, y, 20, COL_TEXT_GRAY);
+  DrawText("DIMENSIONS", x, y, 18, COL_TEXT_GRAY);
   y += 30;
 
   // Width Control
-  DrawText(TextFormat("W: %02d", currentMap.width), x, y + 10, 20,
-           COL_TEXT_WHITE);
-  if (GuiButton((Rectangle){(float)x + 70, (float)y, 30, 30}, "-"))
-    ResizeMap(-1, 0);
-  if (GuiButton((Rectangle){(float)x + 105, (float)y, 30, 30}, "+"))
-    ResizeMap(1, 0);
+  DrawText(TextFormat("W: %02d", currentMap.width), x, y + 8, 20, COL_TEXT_WHITE);
+  
+  Rectangle btnWM = {(float)x + 80, (float)y, 30, 30};
+  DrawRectangleRounded(btnWM, 0.3f, 4, CheckCollisionPointRec(GetMousePosition(), btnWM) ? GRAY : DARKGRAY);
+  DrawText("-", btnWM.x+10, btnWM.y+2, 20, WHITE);
+  if (CheckCollisionPointRec(GetMousePosition(), btnWM) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ResizeMap(-1, 0);
+
+  Rectangle btnWP = {(float)x + 120, (float)y, 30, 30};
+  DrawRectangleRounded(btnWP, 0.3f, 4, CheckCollisionPointRec(GetMousePosition(), btnWP) ? GRAY : DARKGRAY);
+  DrawText("+", btnWP.x+9, btnWP.y+2, 20, WHITE);
+  if (CheckCollisionPointRec(GetMousePosition(), btnWP) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ResizeMap(1, 0);
 
   // Height Control
-  DrawText(TextFormat("H: %02d", currentMap.height), x + 160, y + 10, 20,
-           COL_TEXT_WHITE);
-  if (GuiButton((Rectangle){(float)x + 230, (float)y, 30, 30}, "-"))
-    ResizeMap(0, -1);
-  if (GuiButton((Rectangle){(float)x + 265, (float)y, 30, 30}, "+"))
-    ResizeMap(0, 1);
+  DrawText(TextFormat("H: %02d", currentMap.height), x + 180, y + 8, 20, COL_TEXT_WHITE);
+  
+  Rectangle btnHM = {(float)x + 250, (float)y, 30, 30};
+  DrawRectangleRounded(btnHM, 0.3f, 4, CheckCollisionPointRec(GetMousePosition(), btnHM) ? GRAY : DARKGRAY);
+  DrawText("-", btnHM.x+10, btnHM.y+2, 20, WHITE);
+  if (CheckCollisionPointRec(GetMousePosition(), btnHM) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ResizeMap(0, -1);
+
+  Rectangle btnHP = {(float)x + 290, (float)y, 30, 30};
+  DrawRectangleRounded(btnHP, 0.3f, 4, CheckCollisionPointRec(GetMousePosition(), btnHP) ? GRAY : DARKGRAY);
+  DrawText("+", btnHP.x+9, btnHP.y+2, 20, WHITE);
+  if (CheckCollisionPointRec(GetMousePosition(), btnHP) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) ResizeMap(0, 1);
+  
   y += 50;
 
   // --- UNDERLAY SELECTOR ---
-  DrawText("DESTRUCTION REPLACE", x, y, 20, COL_TEXT_GRAY);
+  DrawText("PIERRE D'EFFACAGE", x, y, 18, COL_TEXT_GRAY);
   y += 30;
   // Find current underlay texture
   Texture2D underlayTex = palette[0].texture;
@@ -726,27 +765,28 @@ void DrawUI(void) {
       break;
     }
 
-  Rectangle rSetup = {(float)x, (float)y, 40, 40};
+  Rectangle rSetup = {(float)x, (float)y, 48, 48};
   DrawTexturePro(
       underlayTex,
       (Rectangle){0, 0, (float)underlayTex.width, (float)underlayTex.height},
       rSetup, (Vector2){0, 0}, 0, WHITE);
 
   if (isChoosingUnderlay) {
-    DrawRectangleLinesEx(rSetup, 3, COL_ACCENT);
-    DrawText("CLICK TILE BELOW...", x + 50, y + 12, 10, COL_ACCENT);
+    DrawRectangleRoundedLines(rSetup, 0.2f, 4, COL_ACCENT);
+    DrawText("CLIQUEZ SUR LA PALETTE POUR CHOISIR...", x + 60, y + 15, 12, COL_ACCENT);
   } else {
-    DrawRectangleLinesEx(rSetup, 1, COL_TEXT_GRAY);
+    DrawRectangleRoundedLines(rSetup, 0.2f, 4, COL_TEXT_GRAY);
     if (CheckCollisionPointRec(GetMousePosition(), rSetup) &&
         IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
       isChoosingUnderlay = !isChoosingUnderlay;
     }
+    DrawText("(Pierre de remplacement)", x + 60, y + 15, 14, GRAY);
   }
   y += 60;
 
   // --- PALETTE / TOOLS ---
   if (currentMode == MODE_VISUAL) {
-    DrawText("PALETTE", x, y, 20, COL_TEXT_GRAY);
+    DrawText("PALETTE", x, y, 18, COL_TEXT_GRAY);
     y += 30;
     int px = x;
     int py = y;
@@ -755,16 +795,16 @@ void DrawUI(void) {
       if (palette[i].id == -1)
         continue;
 
-      Rectangle pRect = {(float)px, (float)py, 40, 40};
+      Rectangle pRect = {(float)px, (float)py, 48, 48};
       DrawTexturePro(palette[i].texture,
                      (Rectangle){0, 0, (float)palette[i].texture.width,
                                  (float)palette[i].texture.height},
                      pRect, (Vector2){0, 0}, 0, WHITE);
 
       if (selectedBlockId == palette[i].id && !isChoosingUnderlay)
-        DrawRectangleLinesEx(pRect, 3, COL_ACCENT);
+        DrawRectangleRoundedLines(pRect, 0.2f, 4, COL_ACCENT);
       else if (CheckCollisionPointRec(GetMousePosition(), pRect))
-        DrawRectangleLinesEx(pRect, 1, WHITE); // Hover
+        DrawRectangleRoundedLines(pRect, 0.2f, 4, WHITE); // Hover
 
       if (CheckCollisionPointRec(GetMousePosition(), pRect) &&
           IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -775,28 +815,27 @@ void DrawUI(void) {
           selectedBlockId = palette[i].id;
         }
       }
-      px += 45;
+      px += 55;
       if (px > x + w - 40) {
         px = x;
-        py += 45;
+        py += 55;
       }
     }
   } else {
-    DrawText("COLLISION TYPES", x, y, 20, COL_TEXT_GRAY);
+    DrawText("TYPES DE COLLISION", x, y, 18, COL_TEXT_GRAY);
     y += 30;
 
-    const char *names[] = {"WALL", "DESTR", "SPAWN"};
-    Color colors[] = {RED, GREEN, BLUE};
+    const char *names[] = {"MUR", "DESTRUCTIBLE", "SPAWN"};
+    Color colors[] = {RED, GREEN, BLUE}; // Keeping BLUE as user requested revert
     int ids[] = {1, 2, 3};
 
     for (int i = 0; i < 3; i++) {
       Rectangle btn = {(float)x, (float)y, 100.0f, 40.0f};
       bool active = (selectedCollisionType == ids[i]);
 
-      if (active)
-        DrawRectangleRec(btn, Fade(colors[i], 0.3f));
-      DrawRectangleLinesEx(btn, 2, colors[i]);
-      DrawText(names[i], btn.x + 10, btn.y + 10, 20, colors[i]);
+      DrawRectangleRounded(btn, 0.3f, 6, active ? Fade(colors[i], 0.3f) : (Color){0,0,0,0});
+      DrawRectangleRoundedLines(btn, 0.3f, 6, colors[i]);
+      DrawText(names[i], btn.x + 15, btn.y + 10, 18, colors[i]);
 
       if (CheckCollisionPointRec(GetMousePosition(), btn) &&
           IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -804,7 +843,7 @@ void DrawUI(void) {
       }
       x += 110;
     }
-    DrawText("RIGHT CLICK TO ERASE", 20, y + 50, 20, COL_TEXT_GRAY);
+    DrawText("CLIQUE DROIT POUR EFFACER", 20, y + 50, 20, COL_TEXT_GRAY);
   }
 }
 
@@ -941,54 +980,79 @@ void UpdateMapDimensions(int newWidth, int newHeight) {
 }
 void ExportCollisionMap(const char *filename) {} // Unused, replaced by SaveMap
 
+// Helper to draw a modern popup button
+bool DrawPopupButton(const char *text, Rectangle bounds) {
+    bool pressed = false;
+    bool hover = CheckCollisionPointRec(GetMousePosition(), bounds);
+    
+    Color btnColor = hover ? Fade(COL_ACCENT, 0.5f) : Fade(BLACK, 0.5f);
+    
+    DrawRectangleRec(bounds, btnColor);
+    DrawRectangleLinesEx(bounds, 1, hover ? COL_ACCENT : Fade(COL_ACCENT, 0.3f));
+    
+    int txtW = MeasureText(text, 20);
+    DrawText(text, bounds.x + (bounds.width - txtW)/2, bounds.y + (bounds.height - 20)/2, 20, WHITE);
+
+    if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        pressed = true;
+    }
+    return pressed;
+}
+
 void DrawOverlay(void) {
+  if (!showOverwriteConfirmation && !showDeleteConfirmation) return;
+
+  DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.5f));
+
+  const char *title = NULL;
+  const char *detail = NULL;
+  
   if (showOverwriteConfirmation) {
-    // Draw Modal
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
-                  (Color){0, 0, 0, 100});
-    int boxW = 300, boxH = 150;
-    int boxX = (GetScreenWidth() - boxW) / 2;
-    int boxY = (GetScreenHeight() - boxH) / 2;
-
-    DrawRectangle(boxX, boxY, boxW, boxH, RAYWHITE);
-    DrawRectangleLines(boxX, boxY, boxW, boxH, BLACK);
-
-    DrawText("OVERWRITE MAP?", boxX + 60, boxY + 30, 20, RED);
-    DrawText(currentMapName, boxX + (300 - MeasureText(currentMapName, 20)) / 2,
-             boxY + 60, 20, DARKGRAY);
-
-    if (GuiButton((Rectangle){(float)boxX + 20, (float)boxY + 100, 100, 30},
-                  "YES")) {
-      ForceSaveMap();
-    }
-    if (GuiButton((Rectangle){(float)boxX + 180, (float)boxY + 100, 100, 30},
-                  "NO")) {
-      showOverwriteConfirmation = false;
-    }
+      title = "LA MAP EXISTE DEJA";
+      detail = currentMapName;
+  } else {
+      title = "SUPPRIMER LA MAP?";
+      detail = mapToDelete;
   }
 
-  if (showDeleteConfirmation) {
-    // Draw Modal
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
-                  (Color){0, 0, 0, 100});
-    int boxW = 300, boxH = 150;
-    int boxX = (GetScreenWidth() - boxW) / 2;
-    int boxY = (GetScreenHeight() - boxH) / 2;
+  // Popup Box
+  float popupW = 400;
+  float popupH = 220;
+  float popupX = (GetScreenWidth() - popupW) / 2;
+  float popupY = (GetScreenHeight() - popupH) / 2;
+  Rectangle popupRect = {popupX, popupY, popupW, popupH};
 
-    DrawRectangle(boxX, boxY, boxW, boxH, RAYWHITE);
-    DrawRectangleLines(boxX, boxY, boxW, boxH, BLACK);
+  // Background
+  DrawRectangleRec(popupRect, Fade(BLACK, 0.4f));
+  DrawRectangleLinesEx(popupRect, 3, COL_ACCENT);
 
-    DrawText("DELETE MAP?", boxX + 80, boxY + 30, 20, RED);
-    DrawText(mapToDelete, boxX + (300 - MeasureText(mapToDelete, 20)) / 2,
-             boxY + 60, 20, DARKGRAY);
+  // Titre
+  if (title) {
+      DrawText(title, popupX + (popupW - MeasureText(title, 26)) / 2, popupY + 30, 26, COL_ACCENT);
+  }
+  
+  // Detail
+  if (detail) {
+      DrawText(detail, popupX + (popupW - MeasureText(detail, 20)) / 2, popupY + 80, 20, WHITE);
+  }
 
-    if (GuiButton((Rectangle){(float)boxX + 20, (float)boxY + 100, 100, 30},
-                  "YES")) {
-      DeleteMap(mapToDelete);
-    }
-    if (GuiButton((Rectangle){(float)boxX + 180, (float)boxY + 100, 100, 30},
-                  "NO")) {
+  // Boutons
+  float btnW = 120;
+  float btnH = 40;
+  float btnY = popupY + popupH - 60;
+  float spacing = 40;
+  float startX = popupX + (popupW - (2 * btnW + spacing)) / 2;
+.*
+  if (DrawPopupButton("OUI", (Rectangle){startX, btnY, btnW, btnH})) {
+      if (showOverwriteConfirmation) {
+          ForceSaveMap();
+      } else {
+          DeleteMap(mapToDelete);
+      }
+  }
+
+  if (DrawPopupButton("NON", (Rectangle){startX + btnW + spacing, btnY, btnW, btnH})) {
+      showOverwriteConfirmation = false;
       showDeleteConfirmation = false;
-    }
   }
 }
