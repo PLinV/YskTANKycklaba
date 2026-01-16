@@ -497,7 +497,7 @@ void randomCoordsWithDistance(int *XY, player *p, char *map, int pC,
     if (spawns)
         free(spawns);
 
-    // Fallback: Random loop
+    // Fallback or for power ups : Random loop
     while (!hasFinished && tries < 1000)
     {
         randomX = rand() % W;

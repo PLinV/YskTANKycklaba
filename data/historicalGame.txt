@@ -11,3 +11,10 @@ gameNum;usernameP1;usernameP2;usernameP3;usernameP4;scoreP1;scoreP2;scoreP3;scor
 10;J1;J2;NULL;NULL;30;0;0;0;1
 11;J1;J2;NULL;NULL;30;0;0;0;1
 12;J1;J2;NULL;NULL;30;0;0;0;1
+13;J1;J2;NULL;NULL;0;30;0;0;2
+14;J1;J2;J3;NULL;50;0;7;0;1
+15;J1;J2;NULL;NULL;17;28;0;0;2
+16;Aurel;hatem;NULL;NULL;0;30;0;0;2
+17;J1;J2;NULL;NULL;0;30;0;0;2
+18;J1;J2;NULL;NULL;29;7;0;0;1
+19;Aurel;hatem;gauthier;NULL;60;0;0;0;1
